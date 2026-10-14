@@ -728,7 +728,7 @@ export class AssetDetailsPageComponent {
 
 
     this.assetService
-      .get(id)
+      .getById(id)
       .subscribe({
 
         next: asset => {
