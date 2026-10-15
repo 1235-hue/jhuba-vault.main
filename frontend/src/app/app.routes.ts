@@ -23,6 +23,7 @@ export const routes: Routes = [
   { path: 'auth/register', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'admin/login', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'catalogue', component: CataloguePageComponent },
+  { path: 'requests', component: AdminRequestsPageComponent },
   { path: 'assets/:id', component: AssetDetailsPageComponent },
   { path: 'app/dashboard', component: InnovatorDashboardPageComponent, canActivate: [authGuard] },
   { path: 'app/requests', component: RequestHistoryPageComponent, canActivate: [authGuard] },
