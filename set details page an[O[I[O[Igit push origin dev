@@ -1,0 +1,220 @@
+warning: in the working copy of 'backend/prisma/schema.prisma', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma[m
+[1mindex 9d5c203..e5e262c 100644[m
+[1m--- a/backend/prisma/schema.prisma[m
+[1m+++ b/backend/prisma/schema.prisma[m
+[36m@@ -4,115 +4,118 @@[m [mgenerator client {[m
+ [m
+ datasource db {[m
+   provider = "postgresql"[m
+[31m-  url = env("DATABASE_URL")[m
+[31m-}[m
+[31m-[m
+[31m-enum Role {[m
+[31m-  INNOVATOR[m
+[31m-  ADMIN[m
+[31m-}[m
+[31m-[m
+[31m-enum AssetCategory {[m
+[31m-  COMPUTING_PERIPHERALS[m
+[31m-  NETWORKING_INFRASTRUCTURE[m
+[31m-  IOT_PROTOTYPING[m
+[31m-  AV_PRESENTATION[m
+[31m-  OFFICE_SUPPLIES[m
+[31m-  FURNITURE[m
+[31m-}[m
+[31m-[m
+[31m-enum RequestStatus {[m
+[31m-  PENDING[m
+[31m-  APPROVED[m
+[31m-  REJECTED[m
+[31m-  CHECKED_OUT[m
+[31m-  RETURNED[m
+[31m-  OVERDUE[m
+[32m+[m[32m  url      = env("DATABASE_URL")[m
+ }[m
+ [m
+ model User {[m
+[31m-  id String @id @default(uuid())[m
+[31m-  fullName String[m
+[31m-  email String @unique[m
+[31m-  passwordHash String[m
+[31m-  phoneNumber String[m
+[31m-  identificationId String @unique[m
+[31m-  department String?[m
+[31m-  bio String?[m
+[31m-  githubUrl String?[m
+[31m-  avatarUrl String?[m
+[31m-  role Role @default(INNOVATOR)[m
+[31m-  createdAt DateTime @default(now())[m
+[31m-  updatedAt DateTime @updatedAt[m
+[31m-  requests AssetRequest[][m
+[31m-  auditLogs AuditLog[][m
+[32m+[m[32m  id               String         @id @default(uuid())[m
+[32m+[m[32m  fullName         String[m
+[32m+[m[32m  email            String         @unique[m
+[32m+[m[32m  passwordHash     String[m
+[32m+[m[32m  phoneNumber      String[m
+[32m+[m[32m  identificationId String         @unique[m
+[32m+[m[32m  department       String?[m
+[32m+[m[32m  bio              String?[m
+[32m+[m[32m  githubUrl        String?[m
+[32m+[m[32m  avatarUrl        String?[m
+[32m+[m[32m  role             Role           @default(INNOVATOR)[m
+[32m+[m[32m  createdAt        DateTime       @default(now())[m
+[32m+[m[32m  updatedAt        DateTime       @updatedAt[m
+[32m+[m[32m  requests         AssetRequest[][m
+[32m+[m[32m  auditLogs        AuditLog[][m
+ }[m
+ [m
+ model Asset {[m
+[31m-  id String @id @default(uuid())[m
+[31m-  assetTag String @unique[m
+[31m-  name String[m
+[31m-  category AssetCategory[m
+[31m-  description String[m
+[31m-  price Decimal @db.Decimal(12, 2) @default(0)[m
+[31m-  totalQuantity Int @default(1)[m
+[31m-  availableQty Int @default(1)[m
+[31m-  imageUrl String?[m
+[31m-  imagePublicId String?[m
+[32m+[m[32m  id             String        @id @default(uuid())[m
+[32m+[m[32m  assetTag       String        @unique[m
+[32m+[m[32m  name           String[m
+[32m+[m[32m  category       AssetCategory[m
+[32m+[m[32m  description    String[m
+[32m+[m[32m  totalQuantity  Int           @default(1)[m
+[32m+[m[32m  availableQty   Int           @default(1)[m
+[32m+[m[32m  imageUrl       String?[m
+[32m+[m[32m  imagePublicId  String?[m
+   specifications Json[m
+[31m-  createdAt DateTime @default(now())[m
+[31m-  updatedAt DateTime @updatedAt[m
+[31m-  requestItems RequestItem[][m
+[32m+[m[32m  createdAt      DateTime      @default(now())[m
+[32m+[m[32m  updatedAt      DateTime      @updatedAt[m
+[32m+[m[32m  price          Decimal       @default(0) @db.Decimal(12, 2)[m
+[32m+[m[32m  requestItems   RequestItem[][m
+ }[m
+ [m
+ model AssetRequest {[m
+[31m-  id String @id @default(uuid())[m
+[31m-  projectName String[m
+[32m+[m[32m  id              String        @id @default(uuid())[m
+[32m+[m[32m  projectName     String[m
+   projectAbstract String[m
+[31m-  loanDays Int[m
+[31m-  status RequestStatus @default(PENDING)[m
+[32m+[m[32m  loanDays        Int[m
+[32m+[m[32m  status          RequestStatus @default(PENDING)[m
+   rejectionReason String?[m
+[31m-  startDate DateTime[m
+[31m-  expectedReturn DateTime[m
+[31m-  actualReturn DateTime?[m
+[31m-  innovatorId String[m
+[31m-  createdAt DateTime @default(now())[m
+[31m-  updatedAt DateTime @updatedAt[m
+[31m-  innovator User @relation(fields: [innovatorId], references: [id])[m
+[31m-  teamMembers TeamMember[][m
+[31m-  requestItems RequestItem[][m
+[32m+[m[32m  startDate       DateTime[m
+[32m+[m[32m  expectedReturn  DateTime[m
+[32m+[m[32m  actualReturn    DateTime?[m
+[32m+[m[32m  innovatorId     String[m
+[32m+[m[32m  createdAt       DateTime      @default(now())[m
+[32m+[m[32m  updatedAt       DateTime      @updatedAt[m
+[32m+[m[32m  innovator       User          @relation(fields: [innovatorId], references: [id])[m
+[32m+[m[32m  requestItems    RequestItem[][m
+[32m+[m[32m  teamMembers     TeamMember[][m
+[32m+[m
+   @@index([innovatorId, status])[m
+ }[m
+ [m
+ model TeamMember {[m
+[31m-  id String @id @default(uuid())[m
+[31m-  fullName String[m
+[31m-  email String[m
+[31m-  phoneNumber String[m
+[32m+[m[32m  id            String       @id @default(uuid())[m
+[32m+[m[32m  fullName      String[m
+[32m+[m[32m  email         String[m
+[32m+[m[32m  phoneNumber   String[m
+   studentOrIdNo String[m
+   roleInProject String[m
+[31m-  requestId String[m
+[31m-  request AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  requestId     String[m
+[32m+[m[32m  request       AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)[m
+ }[m
+ [m
+ model RequestItem {[m
+[31m-  id String @id @default(uuid())[m
+[31m-  quantity Int[m
+[32m+[m[32m  id        String       @id @default(uuid())[m
+[32m+[m[32m  quantity  Int[m
+   requestId String[m
+[31m-  assetId String[m
+[31m-  request AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)[m
+[31m-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)[m
+[32m+[m[32m  assetId   String[m
+[32m+[m[32m  asset     Asset        @relation(fields: [assetId], references: [id])[m
+[32m+[m[32m  request   AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)[m
+[32m+[m
+   @@unique([requestId, assetId])[m
+ }[m
+ [m
+ model AuditLog {[m
+[31m-  id String @id @default(uuid())[m
+[31m-  actorId String?[m
+[31m-  action String[m
+[32m+[m[32m  id         String   @id @default(uuid())[m
+[32m+[m[32m  actorId    String?[m
+[32m+[m[32m  action     String[m
+   entityType String[m
+[31m-  entityId String[m
+[31m-  metadata Json?[m
+[31m-  createdAt DateTime @default(now())[m
+[31m-  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)[m
+[32m+[m[32m  entityId   String[m
+[32m+[m[32m  metadata   Json?[m
+[32m+[m[32m  createdAt  DateTime @default(now())[m
+[32m+[m[32m  actor      User?    @relation(fields: [actorId], references: [id])[m
+[32m+[m
+   @@index([entityType, entityId])[m
+ }[m
+[32m+[m
+[32m+[m[32menum Role {[m
+[32m+[m[32m  INNOVATOR[m
+[32m+[m[32m  ADMIN[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32menum AssetCategory {[m
+[32m+[m[32m  COMPUTING_PERIPHERALS[m
+[32m+[m[32m  NETWORKING_INFRASTRUCTURE[m
+[32m+[m[32m  IOT_PROTOTYPING[m
+[32m+[m[32m  AV_PRESENTATION[m
+[32m+[m[32m  OFFICE_SUPPLIES[m
+[32m+[m[32m  FURNITURE[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32menum RequestStatus {[m
+[32m+[m[32m  PENDING[m
+[32m+[m[32m  APPROVED[m
+[32m+[m[32m  REJECTED[m
+[32m+[m[32m  CHECKED_OUT[m
+[32m+[m[32m  RETURNED[m
+[32m+[m[32m  OVERDUE[m
+[32m+[m[32m}[m
+[1mdiff --git a/frontend/src/app/features/asset-details-page.component.ts b/frontend/src/app/features/asset-details-page.component.ts[m
+[1mindex 92f4b7d..ced8408 100644[m
+[1m--- a/frontend/src/app/features/asset-details-page.component.ts[m
+[1m+++ b/frontend/src/app/features/asset-details-page.component.ts[m
+[36m@@ -728,7 +728,7 @@[m [mexport class AssetDetailsPageComponent {[m
+ [m
+ [m
+     this.assetService[m
+[31m-      .get(id)[m
+[32m+[m[32m      .getById(id)[m
+       .subscribe({[m
+ [m
+         next: asset => {[m
