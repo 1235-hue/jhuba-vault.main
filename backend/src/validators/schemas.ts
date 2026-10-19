@@ -6,4 +6,11 @@ export const assetSchema = z.object({ assetTag: z.string().trim().min(1), name: 
 export const requestSchema = z.object({ projectName: z.string().trim().min(1), projectAbstract: z.string().trim().min(1), loanDays: z.number().int().positive(), startDate: z.coerce.date(), items: z.array(z.object({ assetId: z.string().uuid(), quantity: z.number().int().positive() })).min(1), teamMembers: z.array(z.object({ fullName: z.string().trim().min(2), email: z.string().email(), phoneNumber: z.string().trim().min(9), studentOrIdNo: z.string().trim().min(1), roleInProject: z.string().trim().min(1) })).default([]) });
 export const rejectSchema = z.object({ rejectionReason: z.string().trim().min(1) });
 export const statusQuery = z.object({ status: z.nativeEnum(RequestStatus).optional(), page: z.coerce.number().int().positive().default(1), limit: z.coerce.number().int().min(1).max(100).default(20) });
-export const adminRequestQuery = statusQuery.extend({ search: z.string().trim().max(100).optional() });
+export const adminRequestQuery = statusQuery.extend({
+  search: z.string().trim().max(100).optional(),
+  dateFrom: z.iso.date().optional(),
+  dateTo: z.iso.date().optional()
+}).refine(query => !query.dateFrom || !query.dateTo || query.dateFrom <= query.dateTo, {
+  message: 'dateFrom must be on or before dateTo',
+  path: ['dateTo']
+});
