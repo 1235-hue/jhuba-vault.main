@@ -39,7 +39,68 @@ router.post('/requests', ...innovator, async (req, res) => { const input = reque
 router.get('/requests', ...innovator, async (req, res) => { const query = statusQuery.parse(req.query); const where = { innovatorId: req.auth!.userId, ...(query.status ? { status: query.status } : {}) }; const [items, total] = await prisma.$transaction([prisma.assetRequest.findMany({ where, include: { requestItems: { include: { asset: true } }, teamMembers: true }, orderBy: { createdAt: 'desc' }, skip: (query.page - 1) * query.limit, take: query.limit }), prisma.assetRequest.count({ where })]); res.json({ success: true, data: { items, page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } }); });
 router.get('/requests/:id', requireAuth, async (req, res) => { const request = await prisma.assetRequest.findUnique({ where: { id: req.params.id }, include: includeRequest }); if (!request || (req.auth!.role !== Role.ADMIN && request.innovatorId !== req.auth!.userId)) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'Request not found'); res.json({ success: true, data: request }); });
 
-router.get('/admin/requests', ...admin, async (req, res) => { const query = adminRequestQuery.parse(req.query); const where = { ...(query.status ? { status: query.status } : {}), ...(query.search ? { OR: [{ projectName: { contains: query.search, mode: 'insensitive' as const } }, { projectAbstract: { contains: query.search, mode: 'insensitive' as const } }, { innovator: { fullName: { contains: query.search, mode: 'insensitive' as const } } }] } : {}) }; const [items, total] = await prisma.$transaction([prisma.assetRequest.findMany({ where, include: includeRequest, orderBy: { createdAt: 'desc' }, skip: (query.page - 1) * query.limit, take: query.limit }), prisma.assetRequest.count({ where })]); res.json({ success: true, data: { items, page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } }); });
+router.get('/admin/requests', ...admin, async (req, res) => {
+  const query = adminRequestQuery.parse(req.query);
+  await markOverdueRequests();
+  const search = query.search;
+  const requestIdSearch = search?.replace(/^REQ[-\s]*/i, '');
+  const searchConditions: Prisma.AssetRequestWhereInput[] = search ? [
+    { projectName: { contains: search, mode: 'insensitive' } },
+    { projectAbstract: { contains: search, mode: 'insensitive' } },
+    { innovator: { fullName: { contains: search, mode: 'insensitive' } } },
+    { innovator: { identificationId: { contains: search, mode: 'insensitive' } } },
+    { id: { contains: search, mode: 'insensitive' } },
+    ...(requestIdSearch && requestIdSearch !== search ? [{ id: { endsWith: requestIdSearch, mode: 'insensitive' as const } }] : [])
+  ] : [];
+  const dateFrom = query.dateFrom ? new Date(`${query.dateFrom}T00:00:00.000Z`) : undefined;
+  const dateToExclusive = query.dateTo ? new Date(`${query.dateTo}T00:00:00.000Z`) : undefined;
+  dateToExclusive?.setUTCDate(dateToExclusive.getUTCDate() + 1);
+  const where: Prisma.AssetRequestWhereInput = {
+    ...(query.status ? { status: query.status } : {}),
+    ...(dateFrom || dateToExclusive ? {
+      createdAt: {
+        ...(dateFrom ? { gte: dateFrom } : {}),
+        ...(dateToExclusive ? { lt: dateToExclusive } : {})
+      }
+    } : {}),
+    ...(search ? { OR: searchConditions } : {})
+  };
+  const [items, total, pending, approved, rejected, checkedOut, returned, overdue] = await prisma.$transaction([
+    prisma.assetRequest.findMany({
+      where,
+      include: includeRequest,
+      orderBy: { createdAt: 'desc' },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit
+    }),
+    prisma.assetRequest.count({ where }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.PENDING } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.APPROVED } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.REJECTED } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.CHECKED_OUT } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.RETURNED } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.OVERDUE } })
+  ]);
+  const statusCounts: Record<RequestStatus, number> = {
+    [RequestStatus.PENDING]: pending,
+    [RequestStatus.APPROVED]: approved,
+    [RequestStatus.REJECTED]: rejected,
+    [RequestStatus.CHECKED_OUT]: checkedOut,
+    [RequestStatus.RETURNED]: returned,
+    [RequestStatus.OVERDUE]: overdue
+  };
+  res.json({
+    success: true,
+    data: {
+      items,
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.ceil(total / query.limit),
+      statusCounts: { ...statusCounts, total: Object.values(statusCounts).reduce((sum, count) => sum + count, 0) }
+    }
+  });
+});
 router.patch('/admin/requests/:id/approve', ...admin, async (req, res) => { const approved = await prisma.$transaction(async tx => { const request = await tx.assetRequest.findUnique({ where: { id: req.params.id }, include: includeRequest }); if (!request) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'Request not found'); if (request.status !== RequestStatus.PENDING) throw new HttpError(409, 'INVALID_STATUS', 'Only pending requests can be approved'); for (const item of request.requestItems) { const updated = await tx.asset.updateMany({ where: { id: item.assetId, availableQty: { gte: item.quantity } }, data: { availableQty: { decrement: item.quantity } } }); if (updated.count !== 1) throw new HttpError(409, 'INSUFFICIENT_INVENTORY', `Insufficient inventory for asset ${item.assetId}`); } const result = await tx.assetRequest.update({ where: { id: request.id }, data: { status: RequestStatus.APPROVED }, include: includeRequest }); await audit(tx, req.auth!.userId, 'REQUEST_APPROVED', 'AssetRequest', result.id); return result; }); const user = approved.innovator; void sendApprovalEmail(user.email, approved.projectName, approved.id).catch(error => console.error('Approval email failed', error)); res.json({ success: true, data: approved }); });
 router.patch('/admin/requests/:id/reject', ...admin, async (req, res) => { const input = rejectSchema.parse(req.body); const result = await prisma.$transaction(async tx => { const request = await tx.assetRequest.findUnique({ where: { id: req.params.id } }); if (!request) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'Request not found'); if (request.status !== RequestStatus.PENDING) throw new HttpError(409, 'INVALID_STATUS', 'Only pending requests can be rejected'); const updated = await tx.assetRequest.update({ where: { id: request.id }, data: { status: RequestStatus.REJECTED, rejectionReason: input.rejectionReason }, include: includeRequest }); await audit(tx, req.auth!.userId, 'REQUEST_REJECTED', 'AssetRequest', updated.id, { rejectionReason: input.rejectionReason }); return updated; }); res.json({ success: true, data: result }); });
 router.patch('/admin/requests/:id/checkout', ...admin, async (req, res) => { const result = await prisma.assetRequest.updateMany({ where: { id: req.params.id, status: RequestStatus.APPROVED }, data: { status: RequestStatus.CHECKED_OUT } }); if (!result.count) throw new HttpError(409, 'INVALID_STATUS', 'Only approved requests can be checked out'); const request = await prisma.assetRequest.findUnique({ where: { id: req.params.id }, include: includeRequest }); await audit(prisma, req.auth!.userId, 'REQUEST_CHECKED_OUT', 'AssetRequest', req.params.id); res.json({ success: true, data: request }); });
