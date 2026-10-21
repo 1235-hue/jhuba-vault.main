@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { AppComponent } from './app.component';
 import { authGuard, guestGuard, roleGuard } from './core/guards';
 import { Role } from './core/models';
 import { AuthPageComponent } from './features/auth-page.component';

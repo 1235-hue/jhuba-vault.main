@@ -1,6 +1,5 @@
 import {
-  CurrencyPipe,
-  DatePipe
+  CurrencyPipe
 } from '@angular/common';
 
 import {
@@ -38,7 +37,6 @@ import {
 
   imports: [
     CurrencyPipe,
-    DatePipe,
     RouterLink,
     AssetImageComponent
   ],
