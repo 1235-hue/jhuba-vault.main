@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd } from '@angular/router';
 import { filter, forkJoin, map, startWith } from 'rxjs';
@@ -12,7 +12,7 @@ import { BrandLogoComponent } from './shared/brand-logo.component';
 @Component({
   selector: 'jhub-root',
   standalone: true,
-  imports: [RouterLink, RouterOutlet, BrandLogoComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, BrandLogoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isAdminRequests()) {
@@ -20,7 +20,8 @@ import { BrandLogoComponent } from './shared/brand-logo.component';
     } @else {
     <header class="topbar">
       <a class="brand" routerLink="/" aria-label="JHUB Africa Vault home"><jhub-brand-logo logo="jhub-africa" variant="header"></jhub-brand-logo><span><strong>AFRICA VAULT</strong><small>ASSET TRACKING</small></span></a>
-      <nav class="desktop-nav" aria-label="Primary navigation">@if (auth.user()?.role === Role.ADMIN) {<a routerLink="/admin/dashboard">Dashboard</a><a routerLink="/admin/requests">Requests</a><a routerLink="/admin/assets">Assets</a><a routerLink="/admin/inventory">Inventory</a>} @else if (auth.user()) {<a routerLink="/app/dashboard">Dashboard</a><a routerLink="/catalogue">Catalogue</a><a routerLink="/app/requests">My Requests</a><a routerLink="/app/loans">Active Loans</a>} @else {<a routerLink="/catalogue">Catalogue</a><a href="#how-it-works">How it works</a><a href="#categories">Categories</a>}</nav>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.update(open => !open)">☰</button>
+      <nav class="desktop-nav" [class.mobile-open]="menuOpen()" aria-label="Primary navigation" (click)="menuOpen.set(false)">@if (auth.user()?.role === Role.ADMIN) {<a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a><a routerLink="/admin/requests" routerLinkActive="active">Requests</a><a routerLink="/admin/assets" routerLinkActive="active">Assets</a><a routerLink="/admin/inventory" routerLinkActive="active">Inventory</a><a routerLink="/admin/users" routerLinkActive="active">Users</a><a routerLink="/admin/audit-log" routerLinkActive="active">Audit Log</a><a routerLink="/admin/settings" routerLinkActive="active">Settings</a>} @else if (auth.user()) {<a routerLink="/app/dashboard">Dashboard</a><a routerLink="/catalogue">Catalogue</a><a routerLink="/app/requests">My Requests</a><a routerLink="/app/loans">Active Loans</a>} @else {<a routerLink="/catalogue">Catalogue</a><a href="#how-it-works">How it works</a><a href="#categories">Categories</a>}</nav>
       <div class="nav-actions">
         @if (auth.user()) { <a class="user-chip" [routerLink]="auth.isAdmin() ? '/admin/dashboard' : '/app/dashboard'">{{ auth.user()?.fullName }}</a><button class="text-button" type="button" (click)="auth.signOut()">Sign out</button> }
         @else { <a class="text-button" routerLink="/auth/login">Sign in</a><a class="primary-button compact" routerLink="/auth/register">Create account</a> }
@@ -40,7 +41,6 @@ import { BrandLogoComponent } from './shared/brand-logo.component';
     @else if (isAdmin()) { <main class="dashboard page-width"><div class="dashboard-head"><div><p class="eyebrow">ADMINISTRATION / OVERVIEW</p><h1>Good morning, <em>administrator.</em></h1></div><a class="primary-button" routerLink="/admin/requests">Review requests <span>→</span></a></div>@if (dashboardLoading()) { <div class="dashboard-state">Loading dashboard metrics…</div> } @else if (dashboardError()) { <div class="dashboard-state error" role="alert">{{ dashboardError() }}</div> } @else if (adminMetrics(); as metrics) { <div class="metric-grid"><div class="metric-card accent-blue"><small>PENDING REQUESTS</small><strong>{{ metrics.pendingRequests }}</strong><span>Awaiting review</span></div><div class="metric-card accent-green"><small>AVAILABLE INVENTORY</small><strong>{{ metrics.availableInventory }}</strong><span>Available units</span></div><div class="metric-card accent-red"><small>OVERDUE LOANS</small><strong>{{ metrics.overdueRequests }}</strong><span>Needs attention</span></div><div class="metric-card"><small>USERS</small><strong>{{ metrics.users }}</strong><span>Registered accounts</span></div><div class="metric-card"><small>TOTAL ASSETS</small><strong>{{ metrics.totalAssets }}</strong><span>Tracked records</span></div><div class="metric-card"><small>ASSETS ON LOAN</small><strong>{{ metrics.checkedOutRequests }}</strong><span>Checked out requests</span></div></div><div class="dashboard-lower"><section class="dashboard-section"><div class="section-heading compact-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>Audit log</h2></div><a class="arrow-link" routerLink="/admin/audit-log">See all ↗</a></div>@if (auditLogs().length) { @for (log of auditLogs().slice(0, 3); track log.id) {<div class="request-row"><span class="request-avatar">{{ log.actor?.fullName?.slice(0, 2)?.toUpperCase() || 'SY' }}</span><div><strong>{{ log.action }}</strong><small>{{ log.actor?.fullName || 'System' }} · {{ log.entityType }}</small></div><span class="status approved">LOGGED</span></div>} } @else { <div class="dashboard-state">No audit activity recorded yet.</div> }</section><section class="quick-panel"><p class="eyebrow">QUICK ACCESS</p><a routerLink="/admin/assets"><span>▦</span>Manage assets <b>↗</b></a><a routerLink="/admin/inventory"><span>◫</span>View inventory <b>↗</b></a><a routerLink="/admin/users"><span>◎</span>Innovator directory <b>↗</b></a></section></div> }</main> }
     @else if (isDashboardShell()) { <main class="dashboard page-width"><div class="dashboard-head"><div><p class="eyebrow">INNOVATOR WORKSPACE</p><h1>Your ideas, <em>in motion.</em></h1><p>Welcome back. Here is the pulse of your JHUB activity.</p></div><a class="primary-button" routerLink="/catalogue">Find assets <span>→</span></a></div>@if (dashboardLoading()) { <div class="dashboard-state">Loading dashboard metrics…</div> } @else if (dashboardError()) { <div class="dashboard-state error" role="alert">{{ dashboardError() }}</div> } @else { <div class="metric-grid"><div class="metric-card accent-blue"><small>ACTIVE REQUESTS</small><strong>{{ activeRequestCount() }}</strong><span>Pending or approved</span></div><div class="metric-card accent-green"><small>ACTIVE LOANS</small><strong>{{ activeLoanCount() }}</strong><span>Checked out or overdue</span></div><div class="metric-card"><small>RETURNED ASSETS</small><strong>{{ returnedRequestCount() }}</strong><span>Returned requests</span></div></div><section class="welcome-panel"><div><p class="eyebrow">KEEP BUILDING</p><h2>Have a new project<br>in mind?</h2><p>Find the components your team needs and start a request in a few minutes.</p><a class="arrow-link" routerLink="/catalogue">Browse the Vault ↗</a></div><span class="welcome-symbol">+</span></section> }</main> }
     @else { <main class="routed-page"></main> }
-    <footer class="footer"><div class="page-width"><a class="brand footer-brand" routerLink="/"><jhub-brand-logo logo="jhub" variant="footer"></jhub-brand-logo></a><p>A shared infrastructure for ambitious ideas.<br>Jomo Kenyatta University of Agriculture and Technology.</p><span>© 2026 JHUB Africa</span></div></footer>
     <router-outlet></router-outlet>
     }
   `,
@@ -52,6 +52,7 @@ import { BrandLogoComponent } from './shared/brand-logo.component';
 export class AppComponent {
   protected readonly auth = inject(AuthStore);
   protected readonly router = inject(Router);
+  protected readonly menuOpen = signal(false);
   private readonly adminService = inject(AdminService);
   private readonly requestService = inject(RequestService);
   protected readonly assetStore = inject(AssetStore);

@@ -5,7 +5,9 @@ Express + TypeScript + Prisma + PostgreSQL backend for the existing Angular appl
 ## Setup
 
 1. Copy `.env.example` to `.env` and set `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL`, and `PORT`.
-2. Start PostgreSQL locally, or use the project Docker Compose service when added.
+2. Start PostgreSQL locally, or run `docker compose up --build` from the
+   repository root to start PostgreSQL and the API together. The API container
+   applies pending migrations before it starts.
 3. Run `npm install` inside `backend/`.
 4. Run `npx prisma generate`.
 5. Run `npx prisma migrate deploy` for the existing migration history.

@@ -85,6 +85,28 @@ http://localhost:3000/api
 
 ---
 
+## Run Backend and Database with Docker
+
+From the repository root, start the PostgreSQL database and API together:
+
+```bash
+docker compose up --build
+```
+
+The API waits for PostgreSQL to become healthy and applies pending Prisma
+migrations before starting. It is available at `http://localhost:3000/api`;
+the health endpoint is `http://localhost:3000/api/health`. The frontend's
+development proxy can connect to this API at `http://localhost:4300`.
+
+The Compose JWT secret default is for local development only. Set `JWT_SECRET`
+in the shell or a root `.env` file to a strong secret before using the stack
+outside local development.
+
+Stop the services with `docker compose down`. Add `--volumes` only when you
+intend to delete the persisted PostgreSQL data.
+
+---
+
 ## Database Setup
 
 Start PostgreSQL:
