@@ -7,3 +7,4 @@ export const requestSchema = z.object({ projectName: z.string().trim().min(1), p
 export const rejectSchema = z.object({ rejectionReason: z.string().trim().min(1) });
 export const statusQuery = z.object({ status: z.nativeEnum(RequestStatus).optional(), page: z.coerce.number().int().positive().default(1), limit: z.coerce.number().int().min(1).max(100).default(20) });
 export const adminRequestQuery = statusQuery.extend({ search: z.string().trim().max(100).optional() });
+export const adminSearchQuery = z.object({ q: z.string().trim().min(2).max(100) });

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient, AssetCategory, Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();

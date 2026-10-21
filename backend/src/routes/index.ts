@@ -5,7 +5,7 @@ import { Prisma, RequestStatus, Role } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { HttpError } from '../middleware/errors';
 import { requireAuth, requireRole } from '../middleware/auth';
-import { adminRequestQuery, assetSchema, loginSchema, registerSchema, rejectSchema, requestSchema, statusQuery } from '../validators/schemas';
+import { adminRequestQuery, adminSearchQuery, assetSchema, loginSchema, registerSchema, rejectSchema, requestSchema, statusQuery } from '../validators/schemas';
 import { signToken } from '../utils/jwt';
 import { audit } from '../services/audit.service';
 import { sendApprovalEmail } from '../services/mail.service';
@@ -45,7 +45,151 @@ router.patch('/admin/requests/:id/reject', ...admin, async (req, res) => { const
 router.patch('/admin/requests/:id/checkout', ...admin, async (req, res) => { const result = await prisma.assetRequest.updateMany({ where: { id: req.params.id, status: RequestStatus.APPROVED }, data: { status: RequestStatus.CHECKED_OUT } }); if (!result.count) throw new HttpError(409, 'INVALID_STATUS', 'Only approved requests can be checked out'); const request = await prisma.assetRequest.findUnique({ where: { id: req.params.id }, include: includeRequest }); await audit(prisma, req.auth!.userId, 'REQUEST_CHECKED_OUT', 'AssetRequest', req.params.id); res.json({ success: true, data: request }); });
 router.patch('/admin/requests/:id/return', ...admin, async (req, res) => { const result = await prisma.$transaction(async tx => { const request = await tx.assetRequest.findUnique({ where: { id: req.params.id }, include: { requestItems: true } }); if (!request) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'Request not found'); if (request.status !== RequestStatus.CHECKED_OUT) throw new HttpError(409, 'INVALID_STATUS', 'Only checked-out requests can be returned'); for (const item of request.requestItems) { const asset = await tx.asset.findUnique({ where: { id: item.assetId } }); if (!asset) throw new HttpError(404, 'ASSET_NOT_FOUND', 'Requested asset no longer exists'); await tx.asset.update({ where: { id: item.assetId }, data: { availableQty: Math.min(asset.availableQty + item.quantity, asset.totalQuantity) } }); } return tx.assetRequest.update({ where: { id: request.id }, data: { status: RequestStatus.RETURNED, actualReturn: new Date() }, include: includeRequest }); }); await audit(prisma, req.auth!.userId, 'REQUEST_RETURNED', 'AssetRequest', result.id); res.json({ success: true, data: result }); });
 
-router.get('/admin/dashboard', ...admin, async (_req, res) => { await markOverdueRequests(); const [assets, inventory, pending, approved, checkedOut, returned, overdue, users] = await prisma.$transaction([prisma.asset.count(), prisma.asset.aggregate({ _sum: { availableQty: true } }), prisma.assetRequest.count({ where: { status: RequestStatus.PENDING } }), prisma.assetRequest.count({ where: { status: RequestStatus.APPROVED } }), prisma.assetRequest.count({ where: { status: RequestStatus.CHECKED_OUT } }), prisma.assetRequest.count({ where: { status: RequestStatus.RETURNED } }), prisma.assetRequest.count({ where: { status: RequestStatus.OVERDUE } }), prisma.user.count()]); res.json({ success: true, data: { totalAssets: assets, availableInventory: inventory._sum.availableQty ?? 0, pendingRequests: pending, approvedRequests: approved, checkedOutRequests: checkedOut, returnedRequests: returned, overdueRequests: overdue, users } }); });
+router.get('/admin/dashboard', ...admin, async (_req, res) => {
+  await markOverdueRequests();
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0, 0, 0, 0);
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  const [
+    assets,
+    inventory,
+    checkedOutInventory,
+    pending,
+    approved,
+    checkedOut,
+    returned,
+    overdue,
+    users,
+    categories,
+    requestActivity,
+    recentRequests,
+    recentActivity
+  ] = await prisma.$transaction([
+    prisma.asset.count(),
+    prisma.asset.aggregate({ _sum: { availableQty: true } }),
+    prisma.requestItem.aggregate({
+      where: { request: { status: { in: [RequestStatus.CHECKED_OUT, RequestStatus.OVERDUE] } } },
+      _sum: { quantity: true }
+    }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.PENDING } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.APPROVED } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.CHECKED_OUT } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.RETURNED } }),
+    prisma.assetRequest.count({ where: { status: RequestStatus.OVERDUE } }),
+    prisma.user.count(),
+    prisma.asset.groupBy({
+      by: ['category'],
+      _sum: { totalQuantity: true },
+      orderBy: { category: 'asc' }
+    }),
+    prisma.$queryRaw<Array<{ month: Date; status: RequestStatus; count: bigint }>>`
+      SELECT date_trunc('month', "createdAt") AS month, status, COUNT(*) AS count
+      FROM "AssetRequest"
+      WHERE "createdAt" >= ${sixMonthsAgo}
+      GROUP BY month, status
+      ORDER BY month ASC
+    `,
+    prisma.assetRequest.findMany({
+      include: includeRequest,
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    }),
+    prisma.auditLog.findMany({
+      include: { actor: { select: { id: true, fullName: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 8
+    })
+  ]);
+  const activityByMonth = new Map<string, { pending: number; approved: number; rejected: number }>();
+  for (const entry of requestActivity) {
+    const month = entry.month.toISOString().slice(0, 7);
+    const values = activityByMonth.get(month) ?? { pending: 0, approved: 0, rejected: 0 };
+    if (entry.status === RequestStatus.PENDING) values.pending = Number(entry.count);
+    if (entry.status === RequestStatus.APPROVED) values.approved = Number(entry.count);
+    if (entry.status === RequestStatus.REJECTED) values.rejected = Number(entry.count);
+    activityByMonth.set(month, values);
+  }
+  res.json({
+    success: true,
+    data: {
+      totalAssets: assets,
+      availableInventory: inventory._sum.availableQty ?? 0,
+      checkedOutInventory: checkedOutInventory._sum.quantity ?? 0,
+      pendingRequests: pending,
+      approvedRequests: approved,
+      checkedOutRequests: checkedOut,
+      returnedRequests: returned,
+      overdueRequests: overdue,
+      users,
+      categoryDistribution: categories.map(item => ({ category: item.category, quantity: item._sum?.totalQuantity ?? 0 })),
+      requestActivity: Array.from(activityByMonth, ([month, counts]) => ({ month, ...counts })),
+      recentRequests,
+      recentActivity
+    }
+  });
+});
+router.get('/admin/search', ...admin, async (req, res) => {
+  const { q } = adminSearchQuery.parse(req.query);
+  const contains = { contains: q, mode: 'insensitive' as const };
+  const [assets, requests, users] = await prisma.$transaction([
+    prisma.asset.findMany({
+      where: { OR: [{ name: contains }, { assetTag: contains }, { description: contains }] },
+      select: { id: true, name: true, assetTag: true },
+      orderBy: { name: 'asc' },
+      take: 5
+    }),
+    prisma.assetRequest.findMany({
+      where: {
+        OR: [
+          { projectName: contains },
+          { projectAbstract: contains },
+          { innovator: { fullName: contains } }
+        ]
+      },
+      select: {
+        id: true,
+        projectName: true,
+        status: true,
+        innovator: { select: { fullName: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    }),
+    prisma.user.findMany({
+      where: { OR: [{ fullName: contains }, { email: contains }] },
+      select: { id: true, fullName: true, email: true, role: true },
+      orderBy: { fullName: 'asc' },
+      take: 5
+    })
+  ]);
+  res.json({
+    success: true,
+    data: [
+      ...assets.map(asset => ({
+        type: 'asset',
+        id: asset.id,
+        label: asset.name,
+        detail: asset.assetTag,
+        href: `/assets/${asset.id}`
+      })),
+      ...requests.map(request => ({
+        type: 'request',
+        id: request.id,
+        label: request.projectName,
+        detail: `${request.innovator.fullName} · ${request.status}`,
+        href: `/app/requests/${request.id}`
+      })),
+      ...users.map(user => ({
+        type: 'user',
+        id: user.id,
+        label: user.fullName,
+        detail: `${user.email} · ${user.role}`,
+        href: '/admin/users'
+      }))
+    ]
+  });
+});
 router.get('/admin/inventory', ...admin, async (_req, res) => { const assets = await prisma.asset.findMany({ orderBy: { assetTag: 'asc' } }); res.json({ success: true, data: assets }); });
 router.get('/admin/users', ...admin, async (_req, res) => { const users = await prisma.user.findMany({ select: { id: true, fullName: true, email: true, phoneNumber: true, identificationId: true, department: true, role: true, createdAt: true, updatedAt: true }, orderBy: { createdAt: 'desc' } }); res.json({ success: true, data: users }); });
 router.patch('/admin/users/:id', ...admin, async (req, res) => { const data = { fullName: typeof req.body.fullName === 'string' ? req.body.fullName.trim() : undefined, phoneNumber: typeof req.body.phoneNumber === 'string' ? req.body.phoneNumber.trim() : undefined, department: typeof req.body.department === 'string' ? req.body.department.trim() : undefined, role: Object.values(Role).includes(req.body.role) ? req.body.role as Role : undefined }; const user = await prisma.user.update({ where: { id: req.params.id }, data, select: { id: true, fullName: true, email: true, phoneNumber: true, identificationId: true, department: true, role: true, createdAt: true, updatedAt: true } }); await audit(prisma, req.auth!.userId, 'USER_UPDATED', 'User', user.id, { fields: Object.keys(data).filter(key => data[key as keyof typeof data] !== undefined) }); res.json({ success: true, data: user }); });
