@@ -1,3 +1,27 @@
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
+
+interface Metric {
+  title: string;
+  value: string;
+  label: string;
+  detail: string;
+}
+
+interface Category {
+  icon: string;
+  title: string;
+  detail: string;
+}
+
+interface WorkflowStep {
+  number: string;
+  icon: string;
+  title: string;
+  detail: string;
+  link: string;
+}
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -62,46 +86,31 @@ export class AppComponent {
   protected readonly auditLogs = signal<AuditLog[]>([]);
   protected readonly innovatorRequests = signal<AssetRequest[]>([]);
   constructor() {
-    this.auth.hydrate().subscribe();
-    this.assetStore.load();
-    effect(() => {
-      const user = this.auth.user();
-      const url = this.navigationUrl();
-      if (!user || (url !== '/admin/dashboard' && url !== '/app/dashboard')) return;
-      this.loadDashboard(user.role);
-    });
+    const subscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(event => this.showLanding.set(event.urlAfterRedirects === '/'));
+    this.destroyRef.onDestroy(() => subscription.unsubscribe());
   }
-  protected readonly Role = Role;
-  private readonly navigationUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects), startWith(this.router.url)), { initialValue: this.router.url });
-  protected readonly isHome = computed(() => this.navigationUrl() === '/' || this.navigationUrl() === '/landing');
-  protected readonly isAdminRequests = computed(() => ['/admin/requests', '/requests'].includes(this.navigationUrl().split('?')[0]));
-  protected readonly isCatalogue = computed(() => false);
-  protected readonly isAuth = computed(() => false);
-  protected readonly isRegister = computed(() => this.navigationUrl().includes('register'));
-  protected readonly isAdminLogin = computed(() => this.navigationUrl() === '/admin/login');
-  protected readonly isAdmin = computed(() => false);
-  protected readonly isDashboardShell = computed(() => false);
-  protected readonly categories = [{ label: 'IoT & Prototyping', value: AssetCategory.IOT_PROTOTYPING, icon: '⌁' }, { label: 'Computing Peripherals', value: AssetCategory.COMPUTING_PERIPHERALS, icon: '▣' }, { label: 'Networking Infrastructure', value: AssetCategory.NETWORKING_INFRASTRUCTURE, icon: '⌘' }, { label: 'AV & Presentation', value: AssetCategory.AV_PRESENTATION, icon: '◉' }, { label: 'Office Supplies', value: AssetCategory.OFFICE_SUPPLIES, icon: '▤' }, { label: 'Furniture', value: AssetCategory.FURNITURE, icon: '⌂' }];
-  protected readonly featuredAsset = computed(() => this.assetStore.assets()[0]);
-  protected readonly categoryTotal = computed(() => new Set(this.assetStore.assets().map(asset => asset.category)).size);
-  protected readonly assets: Array<{ name: string; tag: string; category: AssetCategory; available: number; total: number; accent: string; icon: string }> = [];
-  protected readonly activeRequestCount = computed(() => this.innovatorRequests().filter(request => request.status === RequestStatus.PENDING || request.status === RequestStatus.APPROVED).length);
-  protected readonly activeLoanCount = computed(() => this.innovatorRequests().filter(request => request.status === RequestStatus.CHECKED_OUT || request.status === RequestStatus.OVERDUE).length);
-  protected readonly returnedRequestCount = computed(() => this.innovatorRequests().filter(request => request.status === RequestStatus.RETURNED).length);
-  protected categoryCount(category: AssetCategory): number { return this.assetStore.assets().filter(asset => asset.category === category).length; }
-  private loadDashboard(role: Role): void {
-    this.dashboardLoading.set(true);
-    this.dashboardError.set(null);
-    if (role === Role.ADMIN) {
-      forkJoin({ metrics: this.adminService.dashboard(), audit: this.adminService.auditLog() }).subscribe({
-        next: result => { this.adminMetrics.set(result.metrics); this.auditLogs.set(result.audit); this.dashboardLoading.set(false); },
-        error: () => { this.dashboardLoading.set(false); this.dashboardError.set('Unable to load the administration dashboard.'); }
-      });
-      return;
-    }
-    this.requestService.listMine().subscribe({
-      next: requests => { this.innovatorRequests.set(requests); this.dashboardLoading.set(false); },
-      error: () => { this.dashboardLoading.set(false); this.dashboardError.set('Unable to load your workspace dashboard.'); }
-    });
-  }
+
+  readonly metrics: Metric[] = [
+    { title: 'Asset inventory', value: '210+', label: 'Verified assets', detail: 'Physical and IoT instruments in custody.' },
+    { title: 'Active cohorts', value: '14', label: 'Innovation hubs', detail: 'Regional university and lab nodes.' },
+    { title: 'Deployment rate', value: '88%', label: 'Real-time utilization', detail: 'Assets actively supporting projects.' },
+    { title: 'SLA guarantee', value: '< 24h', label: 'Custodial SLA', detail: 'Fast verification and handoff.' }
+  ];
+
+  readonly categories: Category[] = [
+    { icon: 'pi pi-desktop', title: 'Computing peripherals', detail: 'Displays, boards and input devices.' },
+    { icon: 'pi pi-share-alt', title: 'Networking infrastructure', detail: 'Switches, routers and connectivity.' },
+    { icon: 'pi pi-microchip', title: 'IoT & prototyping', detail: 'Sensors, kits and embedded tools.' },
+    { icon: 'pi pi-video', title: 'AV & presentation', detail: 'Projectors, cameras and audio.' },
+    { icon: 'pi pi-briefcase', title: 'Office supplies', detail: 'Practical tools for project teams.' },
+    { icon: 'pi pi-home', title: 'Furniture', detail: 'Workspaces, seating and fixtures.' }
+  ];
+
+  readonly workflow: WorkflowStep[] = [
+    { number: '01', icon: 'pi pi-user', title: 'Browse & reserve', detail: 'Discover available components and reserve what your team needs.', link: 'View available inventory' },
+    { number: '02', icon: 'pi pi-file-edit', title: 'Submit abstract', detail: 'Share your project abstract for identity and cohort verification.', link: 'Start a project request' },
+    { number: '03', icon: 'pi pi-box', title: 'Lab dispatch', detail: 'Collect verified hardware with barcode and serial tracking.', link: 'Review the handoff flow' }
+  ];
 }

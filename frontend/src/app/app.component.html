@@ -1,0 +1,127 @@
+@if (showLanding()) {
+<header class="topbar">
+  <a class="brand" routerLink="/" aria-label="JHUB Africa Vault home">
+    <img src="assets/logos/jhub-africa.png" alt="JHUB Africa">
+  </a>
+  <nav class="desktop-nav" aria-label="Primary navigation">
+    <a routerLink="/catalogue">Catalogue</a>
+    <a href="#workflow">How it works</a>
+    <a routerLink="/catalogue">Categories</a>
+  </nav>
+  <div class="nav-actions">
+    <a routerLink="/auth/login" class="text-button">Sign in</a>
+    <a routerLink="/auth/register" class="primary-button">Create account</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero page-width">
+    <div class="hero-copy">
+      <p class="eyebrow"><span></span> JHUB AFRICA / ASSET VAULT</p>
+      <h1>Build what<br>matters.<br><em>Borrow the tools.</em></h1>
+      <p>A clear, accountable way for JHUB innovators to discover, request, and track the physical assets that turn promising ideas into working prototypes.</p>
+      <div class="hero-actions">
+        <a class="button primary" routerLink="/catalogue">Browse assets <span aria-hidden="true">→</span></a>
+        <a class="button secondary" routerLink="/auth/register">Join the innovator network</a>
+      </div>
+      <a class="availability" routerLink="/catalogue"><span></span> Live inventory available</a>
+    </div>
+    <div class="hero-art" aria-label="Asset card illustration">
+      <div class="orbit orbit-one"></div>
+      <div class="orbit orbit-two"></div>
+      <div class="asset-card">Arduino Uno R3 <small>AV-0182</small></div>
+      <div class="asset-card count-card">4 <small>units available</small></div>
+    </div>
+  </section>
+
+  <div class="steps-bar">
+    <div class="page-width steps">
+      <span><b>01</b> Discover what is available</span>
+      <span><b>02</b> Request for your project</span>
+      <span><b>03</b> Track it from pickup to return</span>
+    </div>
+  </div>
+
+  <section class="inventory page-width" id="catalogue">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">THE VAULT, AT A GLANCE</p>
+        <h2>Everything to <em>move</em><br>from idea to <em>impact.</em></h2>
+      </div>
+      <a routerLink="/catalogue" class="view-all">View all assets <span>↗</span></a>
+    </div>
+    <div class="metrics">
+      @for (metric of metrics; track metric.title) {
+        <article class="metric-card">
+          <span>{{ metric.title }}</span>
+          <strong>{{ metric.value }}</strong>
+          <b>{{ metric.label }}</b>
+          <small>{{ metric.detail }}</small>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="catalogue page-width">
+    <div class="section-heading compact">
+      <div>
+        <p class="eyebrow">PHYSICAL CATALOGUE</p>
+        <h2>Asset categories</h2>
+      </div>
+      <span class="inventory-note">Live inventory is updated daily</span>
+    </div>
+    <div class="category-grid">
+      @for (category of categories; track category.title) {
+        <a class="category-card" routerLink="/catalogue" [attr.aria-label]="'View ' + category.title + ' items'">
+          <i [class]="category.icon" aria-hidden="true"></i>
+          <strong>{{ category.title }}</strong>
+          <small>{{ category.detail }}</small>
+          <span>View items →</span>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="workflow page-width" id="workflow">
+    <div class="workflow-heading">
+      <p class="eyebrow">PROTOCOL DISCIPLINE</p>
+      <h2>Custodial workflow</h2>
+      <p>Structured, transparent and designed for accountable access.</p>
+    </div>
+    <div class="workflow-grid">
+      @for (step of workflow; track step.number) {
+        <article class="workflow-card">
+          <div class="workflow-top"><span>{{ step.number }}</span><i [class]="step.icon" aria-hidden="true"></i></div>
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.detail }}</p>
+          <a routerLink="/catalogue">{{ step.link }} <span>→</span></a>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="deployment page-width">
+    <div>
+      <p class="eyebrow">IMMEDIATE DEPLOYMENT</p>
+      <h2>Accelerate your incubation sprint with dedicated hardware.</h2>
+      <p>From prototyping to field deployment, access the right instruments without slowing down your team.</p>
+    </div>
+    <a class="button light" routerLink="/catalogue">Browse physical catalog <span>→</span></a>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-grid page-width">
+    <div class="footer-about">
+      <a class="brand footer-brand" routerLink="/"><img src="assets/logos/jhub-africa.png" alt="JHUB Africa"></a>
+      <p>Pan-African physical and IoT asset repository for developing ideas, labs, and innovation nodes.</p>
+    </div>
+    <div><h3>About & foundation</h3><a href="#workflow">Technology sovereignty</a><a href="#workflow">Custodial SLA</a><a routerLink="/catalogue">Automated tracking</a><a href="#workflow">Research and governance</a></div>
+    <div><h3>Partnerships & ecosystem</h3><a routerLink="/catalogue">Regional university nodes</a><a routerLink="/catalogue">Prototyping facilities</a><a routerLink="/catalogue">Hardware ecosystem</a><a routerLink="/catalogue">Venture & seed incubators</a></div>
+    <div><h3>Opportunities</h3><a routerLink="/auth/register">Innovator fellowships</a><a routerLink="/auth/register">Student hardware grants</a><a routerLink="/auth/register">Cohort acceleration sprints</a><a routerLink="/auth/register">Lab custodial residencies</a></div>
+  </div>
+  <div class="footer-bottom page-width"><span>© 2026 JHUB Africa Vault</span><span>Built for accountable innovation across Africa</span></div>
+</footer>
+}
+
+<router-outlet></router-outlet>
