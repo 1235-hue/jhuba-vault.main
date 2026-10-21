@@ -9,6 +9,7 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import {
   ActivatedRoute,
@@ -33,6 +34,7 @@ import {
   selector: 'jhub-asset-details-page',
 
   standalone: true,
+  styleUrls: ['./innovator-theme.component.css'],
 
   imports: [
     CurrencyPipe,
@@ -51,9 +53,9 @@ import {
       <!-- BACK -->
       <a
         class="back-link"
-        routerLink="/assets">
+        routerLink="/catalogue">
 
-        ← Back to assets
+        ← Back to catalogue
 
       </a>
 
@@ -94,7 +96,9 @@ import {
 
             <jhub-asset-image
               [url]="asset()!.imageUrl"
-              [alt]="asset()!.name">
+              [alt]="asset()!.name"
+              [fit]="'contain'"
+              [loading]="'eager'">
             </jhub-asset-image>
 
           </div>
@@ -202,6 +206,20 @@ import {
 
             </div>
 
+            @if (specifications().length) {
+              <section class="specifications" aria-labelledby="specifications-heading">
+                <h2 id="specifications-heading">Technical specifications</h2>
+                <dl>
+                  @for (specification of specifications(); track specification[0]) {
+                    <div>
+                      <dt>{{ specification[0] }}</dt>
+                      <dd>{{ specification[1] }}</dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+            }
+
 
             <!-- ACTION -->
             <div class="actions">
@@ -235,7 +253,7 @@ import {
 
               <a
                 class="secondary"
-                routerLink="/assets">
+                routerLink="/catalogue">
 
                 Browse other assets
 
@@ -500,6 +518,40 @@ import {
       color: #e6292a;
     }
 
+    .specifications {
+      margin: 0 0 24px;
+    }
+
+    .specifications h2 {
+      margin: 0 0 10px;
+      color: #262571;
+      font-size: 13px;
+    }
+
+    .specifications dl {
+      margin: 0;
+      border-top: 1px solid #edf0f4;
+    }
+
+    .specifications dl > div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 9px 0;
+      border-bottom: 1px solid #edf0f4;
+      font-size: 11px;
+    }
+
+    .specifications dt {
+      color: #7c8492;
+    }
+
+    .specifications dd {
+      margin: 0;
+      color: #262571;
+      text-align: right;
+    }
+
 
     /* ACTIONS */
 
@@ -697,22 +749,18 @@ export class AssetDetailsPageComponent {
 
 
   constructor() {
-
-    this.loadAsset();
-
+    this.route.paramMap
+      .pipe(takeUntilDestroyed())
+      .subscribe(params => this.loadAsset(params.get('id')));
   }
 
+  protected specifications(): Array<[string, string]> {
+    return Object.entries(this.asset()?.specifications ?? {});
+  }
 
-  private loadAsset(): void {
-
+  private loadAsset(id: string | null): void {
     this.loading.set(true);
-
     this.error.set(null);
-
-
-    const id =
-      this.route.snapshot.paramMap.get('id');
-
 
     if (!id) {
 
@@ -732,6 +780,7 @@ export class AssetDetailsPageComponent {
       .subscribe({
 
         next: asset => {
+          if (this.route.snapshot.paramMap.get('id') !== id) return;
 
           this.asset.set(asset);
 
@@ -741,6 +790,7 @@ export class AssetDetailsPageComponent {
 
 
         error: error => {
+          if (this.route.snapshot.paramMap.get('id') !== id) return;
 
           console.error(
             'Unable to load asset:',

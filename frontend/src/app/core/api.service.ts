@@ -9,6 +9,7 @@ interface ApiResponse<T> { success: boolean; data: T; }
 export interface AuthCredentials { email: string; password: string; }
 export interface RegistrationData extends AuthCredentials { fullName: string; phoneNumber: string; identificationId: string; department?: string; }
 export interface AuthResponse { user: User; token: string; }
+export interface HealthStatus { status: 'ok'; service: string; }
 export interface AdminRequestCounts extends Record<RequestStatus, number> { total: number; }
 export interface AdminRequestPage { items: AssetRequest[]; page: number; limit: number; total: number; totalPages: number; statusCounts?: AdminRequestCounts; }
 
@@ -71,8 +72,10 @@ export class ProfileService {
 export class AdminService {
   private readonly http = inject(HttpClient);
   dashboard(): Observable<AdminDashboard> { return this.http.get<ApiResponse<AdminDashboard>>(`${API_URL}/admin/dashboard`).pipe(map(response => response.data)); }
+  health(): Observable<HealthStatus> { return this.http.get<ApiResponse<HealthStatus>>(`${API_URL}/health`).pipe(map(response => response.data)); }
   search(query: string): Observable<AdminSearchResult[]> { return this.http.get<ApiResponse<AdminSearchResult[]>>(`${API_URL}/admin/search`, { params: { q: query } }).pipe(map(response => response.data)); }
   users(): Observable<User[]> { return this.http.get<ApiResponse<User[]>>(`${API_URL}/admin/users`).pipe(map(response => response.data)); }
+  updateUser(id: string, user: Pick<User, 'fullName' | 'phoneNumber' | 'department' | 'role'>): Observable<User> { return this.http.patch<ApiResponse<User>>(`${API_URL}/admin/users/${id}`, user).pipe(map(response => response.data)); }
   inventory(): Observable<Asset[]> { return this.http.get<ApiResponse<Asset[]>>(`${API_URL}/admin/inventory`).pipe(map(response => response.data)); }
   auditLog(): Observable<AuditLog[]> { return this.http.get<ApiResponse<AuditLog[]>>(`${API_URL}/admin/audit`).pipe(map(response => response.data)); }
 }

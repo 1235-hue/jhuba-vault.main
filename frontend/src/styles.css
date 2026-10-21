@@ -34,3 +34,509 @@ button { cursor: pointer; }
   .topbar nav.desktop-nav.mobile-open a { padding: 12px 8px; border-bottom: 1px solid #edf0f4; }
   .nav-actions { gap: 10px !important; }
 }
+
+/* Keep the Innovator routes visually aligned with the Admin design system. */
+jhub-innovator-dashboard-page .dashboard.page-width,
+jhub-catalogue-page .catalogue-page.page-width,
+jhub-asset-details-page .asset-details.page-width,
+jhub-request-history-page .history-page.page-width,
+jhub-request-details-page .request-details.page-width,
+jhub-request-cart-page .cart-page.page-width,
+jhub-workspace-page .workspace.page-width,
+jhub-request-submitted-page .submitted.page-width,
+jhub-profile-page .profile-page.page-width,
+jhub-simple-workspace-page .simple-page.page-width {
+  width: min(1160px, calc(100% - 48px));
+}
+
+jhub-innovator-dashboard-page .dashboard.page-width,
+jhub-catalogue-page .catalogue-page.page-width,
+jhub-asset-details-page .asset-details.page-width,
+jhub-request-history-page .history-page.page-width,
+jhub-request-details-page .request-details.page-width,
+jhub-request-cart-page .cart-page.page-width,
+jhub-workspace-page .workspace.page-width,
+jhub-request-submitted-page .submitted.page-width,
+jhub-profile-page .profile-page.page-width,
+jhub-simple-workspace-page .simple-page.page-width {
+  padding-top: 44px;
+  padding-bottom: 72px;
+}
+
+jhub-innovator-dashboard-page .dashboard.page-width .heading h1,
+jhub-request-history-page .history-page.page-width .heading h1,
+jhub-request-cart-page .cart-page.page-width .heading h1,
+jhub-workspace-page .workspace.page-width h1,
+jhub-simple-workspace-page .simple-page.page-width h1 {
+  font-size: clamp(34px, 4vw, 46px);
+  line-height: 1.05;
+}
+
+jhub-catalogue-page .catalogue-page.page-width .catalogue-intro h1,
+jhub-asset-details-page .asset-details.page-width h1,
+jhub-request-details-page .request-details.page-width .details-heading h1,
+jhub-request-submitted-page .submitted.page-width.page-width h1,
+jhub-profile-page .profile-page.page-width .profile-heading h1 {
+  font-size: clamp(34px, 4vw, 46px);
+  line-height: 1.05;
+}
+
+jhub-innovator-dashboard-page .heading,
+jhub-request-history-page .heading,
+jhub-request-cart-page .heading,
+jhub-catalogue-page .catalogue-intro,
+jhub-profile-page .profile-heading {
+  margin-bottom: 25px;
+}
+
+jhub-innovator-dashboard-page .metrics > div,
+jhub-innovator-dashboard-page .recent,
+jhub-innovator-dashboard-page .empty,
+jhub-innovator-dashboard-page .state,
+jhub-catalogue-page .asset-card,
+jhub-catalogue-page .state-box,
+jhub-request-history-page .request-list,
+jhub-request-history-page .state,
+jhub-request-details-page .status-message,
+jhub-request-details-page .details-card,
+jhub-request-details-page .state,
+jhub-request-cart-page .cart-list,
+jhub-request-cart-page .empty-state,
+jhub-workspace-page .wizard-panel,
+jhub-workspace-page .table-panel,
+jhub-request-submitted-page .confirmation,
+jhub-profile-page .avatar-card,
+jhub-profile-page .profile-form,
+jhub-simple-workspace-page .simple-panel {
+  border: 1px solid #e6e8ee;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px #17203308;
+}
+
+jhub-innovator-dashboard-page .metrics > div,
+jhub-innovator-dashboard-page .recent,
+jhub-catalogue-page .state-box,
+jhub-request-history-page .state,
+jhub-request-details-page .details-card,
+jhub-request-cart-page .empty-state,
+jhub-workspace-page .wizard-panel,
+jhub-workspace-page .table-panel,
+jhub-profile-page .avatar-card,
+jhub-profile-page .profile-form,
+jhub-simple-workspace-page .simple-panel {
+  background: #fff;
+}
+
+jhub-catalogue-page .asset-card,
+jhub-catalogue-page .asset-visual,
+jhub-asset-details-page .asset-card,
+jhub-request-history-page .request-list,
+jhub-request-cart-page .cart-list,
+jhub-workspace-page .wizard-panel,
+jhub-workspace-page .table-panel,
+jhub-profile-page .avatar-card,
+jhub-profile-page .profile-form,
+jhub-simple-workspace-page .simple-panel {
+  overflow: hidden;
+}
+
+jhub-innovator-dashboard-page .metrics > div {
+  min-height: 112px;
+  padding: 18px;
+}
+
+jhub-innovator-dashboard-page .metrics strong {
+  font-size: 32px;
+  margin-top: 9px;
+}
+
+jhub-innovator-dashboard-page .recent {
+  padding: 20px;
+}
+
+jhub-innovator-dashboard-page .request-row,
+jhub-request-history-page .request-row,
+jhub-workspace-page .table-row {
+  transition: background-color .15s ease;
+}
+
+jhub-innovator-dashboard-page .request-row:hover,
+jhub-request-history-page .request-row:hover {
+  background: #f8faff;
+}
+
+jhub-catalogue-page .search-box,
+jhub-catalogue-page .filter-row button,
+jhub-request-cart-page .quantity-control,
+jhub-workspace-page .wizard-panel input,
+jhub-workspace-page .wizard-panel textarea,
+jhub-workspace-page .member-form input,
+jhub-profile-page .profile-form input,
+jhub-profile-page .profile-form textarea,
+jhub-profile-page .upload-button {
+  border-radius: 5px;
+}
+
+jhub-catalogue-page .search-box {
+  min-height: 40px;
+}
+
+jhub-catalogue-page .search-box input {
+  padding: 10px;
+}
+
+jhub-catalogue-page .filter-row {
+  flex-wrap: wrap;
+  margin: 24px 0 18px;
+}
+
+jhub-catalogue-page .filter-row button {
+  min-height: 36px;
+  padding: 8px 12px;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+}
+
+jhub-catalogue-page .filter-row button:not(.filter-active):hover {
+  border-color: #aab8df;
+  color: var(--navy);
+}
+
+jhub-catalogue-page .asset-card {
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+jhub-catalogue-page .asset-card:hover {
+  border-color: #cbd4e6;
+  box-shadow: 0 8px 22px #17203312;
+  transform: translateY(-2px);
+}
+
+jhub-catalogue-page .asset-actions {
+  align-items: center;
+  gap: 10px;
+}
+
+jhub-catalogue-page .asset-link,
+jhub-catalogue-page .request-button,
+jhub-asset-details-page .primary,
+jhub-asset-details-page .secondary,
+jhub-request-cart-page .primary-button,
+jhub-workspace-page .primary-button,
+jhub-workspace-page .secondary-button,
+jhub-profile-page .primary-button,
+jhub-profile-page .secondary-button,
+jhub-simple-workspace-page .primary-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+jhub-catalogue-page .request-button,
+jhub-asset-details-page .primary,
+jhub-request-cart-page .primary-button,
+jhub-workspace-page .primary-button,
+jhub-profile-page .primary-button,
+jhub-simple-workspace-page .primary-button {
+  padding: 0 14px;
+  background: var(--blue);
+  color: #fff;
+}
+
+jhub-catalogue-page .request-button:hover:not(:disabled),
+jhub-asset-details-page .primary:hover:not(:disabled),
+jhub-request-cart-page .primary-button:hover,
+jhub-workspace-page .primary-button:hover:not(:disabled),
+jhub-profile-page .primary-button:hover:not(:disabled),
+jhub-simple-workspace-page .primary-button:hover {
+  background: var(--navy);
+  box-shadow: 0 3px 9px #26257124;
+}
+
+jhub-catalogue-page .request-button:disabled,
+jhub-asset-details-page .primary:disabled,
+jhub-workspace-page .primary-button:disabled,
+jhub-profile-page .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+jhub-asset-details-page .asset-card {
+  gap: 36px;
+  padding: 24px;
+}
+
+jhub-asset-details-page .asset-image {
+  border-radius: 6px;
+}
+
+jhub-asset-details-page .details-grid > .detail,
+jhub-request-details-page .facts,
+jhub-profile-page .form-grid > label {
+  border-radius: 5px;
+}
+
+jhub-request-history-page .request-list {
+  overflow: hidden;
+}
+
+jhub-request-history-page .request-row {
+  min-height: 76px;
+  padding: 16px 18px;
+}
+
+jhub-request-history-page .status,
+jhub-request-details-page .details-heading > .status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid #ffe09b;
+  border-radius: 14px;
+  background: #fffaf0;
+  color: #a66b0b;
+  font-size: 10px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+
+jhub-request-history-page .status.approved,
+jhub-request-history-page .status.returned,
+jhub-request-details-page .status.approved,
+jhub-request-details-page .status.returned {
+  border-color: #b6f0d5;
+  background: #effdf6;
+  color: #078a58;
+}
+
+jhub-request-history-page .status.rejected,
+jhub-request-details-page .status.rejected {
+  border-color: #ffc8ce;
+  background: #fff2f3;
+  color: #c52c3b;
+}
+
+jhub-request-history-page .status.checked_out,
+jhub-request-details-page .status.checked_out {
+  border-color: #c8d9ff;
+  background: #f1f6ff;
+  color: #2360e8;
+}
+
+jhub-request-history-page .status.overdue,
+jhub-request-details-page .status.overdue {
+  border-color: #e3c8ff;
+  background: #faf3ff;
+  color: #8734b5;
+}
+
+jhub-request-details-page .status-message {
+  border-left: 3px solid #e7ab39;
+  background: #fffaf0;
+  padding: 18px;
+}
+
+jhub-request-details-page .details-card {
+  padding: 22px;
+}
+
+jhub-request-details-page .facts {
+  padding: 14px;
+  background: #f7f8fb;
+}
+
+jhub-request-cart-page .cart-list {
+  overflow: hidden;
+}
+
+jhub-request-cart-page .cart-item {
+  padding: 17px 20px;
+}
+
+jhub-request-cart-page .quantity-control {
+  overflow: hidden;
+}
+
+jhub-workspace-page .wizard-steps {
+  overflow: hidden;
+  border: 1px solid #e6e8ee;
+  border-radius: 8px;
+  background: #f7f8fb;
+}
+
+jhub-workspace-page .wizard-steps span {
+  flex: 1;
+  text-align: center;
+}
+
+jhub-workspace-page .wizard-panel {
+  padding: 24px;
+}
+
+jhub-workspace-page .wizard-panel input,
+jhub-workspace-page .wizard-panel textarea,
+jhub-workspace-page .member-form input,
+jhub-profile-page .profile-form input,
+jhub-profile-page .profile-form textarea {
+  min-height: 40px;
+  background: #fff;
+  color: var(--ink);
+}
+
+jhub-workspace-page .wizard-panel input:focus,
+jhub-workspace-page .wizard-panel textarea:focus,
+jhub-workspace-page .member-form input:focus,
+jhub-profile-page .profile-form input:focus,
+jhub-profile-page .profile-form textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px #3ea9451a;
+}
+
+jhub-workspace-page .wizard-panel small {
+  display: block;
+  margin-top: 5px;
+}
+
+jhub-workspace-page .wizard-steps span.complete {
+  color: #26742b;
+}
+
+jhub-request-submitted-page .submitted-mark {
+  border-radius: 50%;
+  box-shadow: 0 0 0 8px #e5f2e655;
+}
+
+jhub-request-submitted-page .confirmation {
+  overflow: hidden;
+  gap: 0;
+  border-radius: 8px;
+}
+
+jhub-request-submitted-page .confirmation span {
+  min-width: 0;
+}
+
+jhub-profile-page .profile-layout {
+  gap: 16px;
+}
+
+jhub-profile-page .avatar-card,
+jhub-profile-page .profile-form {
+  padding: 22px;
+}
+
+jhub-profile-page .avatar-card {
+  border-top: 3px solid var(--blue);
+}
+
+jhub-profile-page .profile-form {
+  gap: 20px;
+}
+
+jhub-profile-page .profile-form input,
+jhub-profile-page .profile-form textarea {
+  border-radius: 5px;
+  color: var(--ink);
+}
+
+jhub-profile-page .upload-button:hover {
+  border-color: var(--blue);
+  background: #f5f8ff;
+}
+
+jhub-simple-workspace-page .simple-panel {
+  padding: 24px;
+}
+
+jhub-simple-workspace-page .row {
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  jhub-innovator-dashboard-page .dashboard.page-width,
+  jhub-catalogue-page .catalogue-page.page-width,
+  jhub-asset-details-page .asset-details.page-width,
+  jhub-request-history-page .history-page.page-width,
+  jhub-request-details-page .request-details.page-width,
+  jhub-request-cart-page .cart-page.page-width,
+  jhub-workspace-page .workspace.page-width,
+  jhub-request-submitted-page .submitted.page-width,
+  jhub-profile-page .profile-page.page-width,
+  jhub-simple-workspace-page .simple-page.page-width {
+    width: min(100% - 32px, 1160px);
+    padding-top: 32px;
+    padding-bottom: 48px;
+  }
+
+  jhub-innovator-dashboard-page .metrics > div {
+    min-height: 96px;
+    padding: 14px;
+  }
+
+  jhub-catalogue-page .catalogue-page.page-width .asset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  jhub-asset-details-page .asset-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 18px;
+  }
+
+  jhub-asset-details-page .asset-image {
+    min-height: 300px;
+  }
+
+  jhub-request-details-page .facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  jhub-workspace-page .wizard-steps span {
+    padding: 10px 8px;
+    font-size: 10px;
+  }
+
+  jhub-profile-page .profile-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  jhub-catalogue-page .catalogue-page.page-width .asset-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  jhub-request-history-page .request-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  jhub-request-history-page .request-row > span:nth-child(2) {
+    display: none;
+  }
+
+  jhub-request-cart-page .cart-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    padding: 15px;
+  }
+
+  jhub-workspace-page .two-fields,
+  jhub-workspace-page .member-form,
+  jhub-profile-page .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  jhub-request-submitted-page .confirmation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  jhub-request-details-page .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

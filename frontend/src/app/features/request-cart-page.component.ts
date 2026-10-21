@@ -5,6 +5,7 @@ import { RequestStore } from '../state/request.store';
 @Component({
   selector: 'jhub-request-cart-page',
   standalone: true,
+  styleUrls: ['./innovator-theme.component.css'],
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

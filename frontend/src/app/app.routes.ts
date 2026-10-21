@@ -18,13 +18,14 @@ import { InnovatorDashboardPageComponent } from './features/innovator-dashboard-
 import { AdminDashboardPageComponent } from './features/admin-dashboard-page.component';
 import { AdminUsersPageComponent } from './features/admin-users-page.component';
 import { AdminInventoryPageComponent } from './features/admin-inventory-page.component';
+import { AdminSettingsPageComponent } from './features/admin-settings-page.component';
 
 export const routes: Routes = [
   { path: 'auth/login', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'auth/register', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'admin/login', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'catalogue', component: CataloguePageComponent },
-  { path: 'requests', component: AdminRequestsPageComponent },
+  { path: 'requests', component: AdminRequestsPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'assets/:id', component: AssetDetailsPageComponent },
   { path: 'app/dashboard', component: InnovatorDashboardPageComponent, canActivate: [authGuard] },
   { path: 'app/requests', component: RequestHistoryPageComponent, canActivate: [authGuard] },
@@ -43,6 +44,6 @@ export const routes: Routes = [
   { path: 'admin/inventory', component: AdminInventoryPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'admin/users', component: AdminUsersPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'admin/audit-log', component: AdminPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
-  { path: 'admin/settings', component: AdminPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
+  { path: 'admin/settings', component: AdminSettingsPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: '**', redirectTo: '' }
 ];
