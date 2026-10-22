@@ -21,6 +21,38 @@ const publicUser = (user: { passwordHash: string } & Record<string, unknown>) =>
 const publicAsset = <T extends { imagePublicId?: string | null }>(asset: T): Omit<T, 'imagePublicId'> => { const { imagePublicId: _imagePublicId, ...safe } = asset; return safe; };
 const includeRequest = { innovator: { select: { id: true, fullName: true, email: true, phoneNumber: true, identificationId: true, department: true, role: true } }, teamMembers: true, requestItems: { include: { asset: true } } } as const satisfies Prisma.AssetRequestInclude;
 
+async function createRequestForInnovator(input: ReturnType<typeof requestSchema.parse>, innovatorId: string, actorId?: string) {
+  const assetIds = input.items.map(item => item.assetId);
+  if (new Set(assetIds).size !== assetIds.length) throw new HttpError(422, 'DUPLICATE_ASSET', 'Each asset may only appear once in a request');
+  const expectedReturn = new Date(input.startDate);
+  expectedReturn.setDate(expectedReturn.getDate() + input.loanDays);
+  return prisma.$transaction(async tx => {
+    const innovator = await tx.user.findUnique({ where: { id: innovatorId }, select: { id: true, role: true } });
+    if (!innovator || innovator.role !== Role.INNOVATOR) throw new HttpError(404, 'INNOVATOR_NOT_FOUND', 'Innovator not found');
+    const assets = await tx.asset.findMany({ where: { id: { in: assetIds } } });
+    if (assets.length !== input.items.length) throw new HttpError(404, 'ASSET_NOT_FOUND', 'One or more assets were not found');
+    for (const item of input.items) {
+      const asset = assets.find(candidate => candidate.id === item.assetId)!;
+      if (item.quantity > asset.availableQty) throw new HttpError(409, 'INSUFFICIENT_INVENTORY', `Insufficient inventory for ${asset.name}`);
+    }
+    const created = await tx.assetRequest.create({
+      data: {
+        projectName: input.projectName,
+        projectAbstract: input.projectAbstract,
+        loanDays: input.loanDays,
+        startDate: input.startDate,
+        expectedReturn,
+        innovatorId,
+        teamMembers: { create: input.teamMembers },
+        requestItems: { create: input.items }
+      },
+      include: includeRequest
+    });
+    if (actorId) await audit(tx, actorId, 'ADMIN_REQUEST_CREATED', 'AssetRequest', created.id, { innovatorId });
+    return created;
+  });
+}
+
 router.get('/health', async (_req, res) => { await prisma.$queryRaw`SELECT 1`; res.json({ success: true, data: { status: 'ok', service: 'jhub-africa-vault-api' } }); });
 
 router.post('/auth/register', async (req, res) => { const input = registerSchema.parse(req.body); const { password: _password, ...profile } = input; const passwordHash = await bcrypt.hash(input.password, 12); try { const user = await prisma.user.create({ data: { ...profile, passwordHash }, select: { id: true, fullName: true, email: true, phoneNumber: true, identificationId: true, department: true, bio: true, githubUrl: true, avatarUrl: true, role: true, createdAt: true, updatedAt: true } }); res.status(201).json({ success: true, data: { user, token: signToken(user.id, user.role) } }); } catch (error) { if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new HttpError(409, 'DUPLICATE_USER', 'Email or identification number already exists'); throw error; } });
@@ -36,7 +68,15 @@ router.post('/assets', ...admin, async (req, res) => { const input = assetSchema
 router.patch('/assets/:id', ...admin, async (req, res) => { const id = routeId(req); const input = assetSchema.partial().parse(req.body); const current = await prisma.asset.findUnique({ where: { id } }); if (!current) throw new HttpError(404, 'ASSET_NOT_FOUND', 'Asset not found'); if (input.availableQty !== undefined && input.availableQty > (input.totalQuantity ?? current.totalQuantity)) throw new HttpError(422, 'INVALID_INVENTORY', 'Available quantity cannot exceed total quantity'); const asset = await prisma.asset.update({ where: { id }, data: input }); await audit(prisma, req.auth!.userId, 'ASSET_UPDATED', 'Asset', asset.id, input as Prisma.InputJsonValue); res.json({ success: true, data: asset }); });
 router.delete('/assets/:id', ...admin, async (req, res) => { const count = await prisma.requestItem.count({ where: { assetId: req.params.id } }); if (count) throw new HttpError(409, 'ASSET_HAS_HISTORY', 'Asset cannot be deleted because it has request history'); await prisma.asset.delete({ where: { id: req.params.id } }); await audit(prisma, req.auth!.userId, 'ASSET_DELETED', 'Asset', req.params.id); res.status(204).send(); });
 
-router.post('/requests', ...innovator, async (req, res) => { const input = requestSchema.parse(req.body); const assetIds = input.items.map(item => item.assetId); if (new Set(assetIds).size !== assetIds.length) throw new HttpError(422, 'DUPLICATE_ASSET', 'Each asset may only appear once in a request'); const expectedReturn = new Date(input.startDate); expectedReturn.setDate(expectedReturn.getDate() + input.loanDays); const created = await prisma.$transaction(async tx => { const assets = await tx.asset.findMany({ where: { id: { in: assetIds } } }); if (assets.length !== input.items.length) throw new HttpError(404, 'ASSET_NOT_FOUND', 'One or more assets were not found'); for (const item of input.items) { const asset = assets.find(candidate => candidate.id === item.assetId)!; if (item.quantity > asset.availableQty) throw new HttpError(409, 'INSUFFICIENT_INVENTORY', `Insufficient inventory for ${asset.name}`); } return tx.assetRequest.create({ data: { projectName: input.projectName, projectAbstract: input.projectAbstract, loanDays: input.loanDays, startDate: input.startDate, expectedReturn, innovatorId: req.auth!.userId, teamMembers: { create: input.teamMembers }, requestItems: { create: input.items } }, include: includeRequest }); }); res.status(201).json({ success: true, data: created }); });
+router.post('/requests', ...innovator, async (req, res) => {
+  const created = await createRequestForInnovator(requestSchema.parse(req.body), req.auth!.userId);
+  res.status(201).json({ success: true, data: created });
+});
+router.post('/admin/requests', ...admin, async (req, res) => {
+  const input = adminRequestSchema.parse(req.body);
+  const created = await createRequestForInnovator(input, input.innovatorId, req.auth!.userId);
+  res.status(201).json({ success: true, data: created });
+});
 router.get('/requests', ...innovator, async (req, res) => { const query = statusQuery.parse(req.query); const where = { innovatorId: req.auth!.userId, ...(query.status ? { status: query.status } : {}) }; const [items, total] = await prisma.$transaction([prisma.assetRequest.findMany({ where, include: { requestItems: { include: { asset: true } }, teamMembers: true }, orderBy: { createdAt: 'desc' }, skip: (query.page - 1) * query.limit, take: query.limit }), prisma.assetRequest.count({ where })]); res.json({ success: true, data: { items, page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } }); });
 router.get('/requests/:id', requireAuth, async (req, res) => { const request = await prisma.assetRequest.findUnique({ where: { id: req.params.id }, include: includeRequest }); if (!request || (req.auth!.role !== Role.ADMIN && request.innovatorId !== req.auth!.userId)) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'Request not found'); res.json({ success: true, data: request }); });
 
@@ -163,13 +203,18 @@ router.get('/admin/dashboard', ...admin, async (_req, res) => {
       take: 8
     })
   ]);
-  const activityByMonth = new Map<string, { pending: number; approved: number; rejected: number }>();
+  const activityByMonth = new Map<string, { total: number; pending: number; approved: number; rejected: number; checkedOut: number; returned: number; overdue: number }>();
   for (const entry of requestActivity) {
     const month = entry.month.toISOString().slice(0, 7);
-    const values = activityByMonth.get(month) ?? { pending: 0, approved: 0, rejected: 0 };
-    if (entry.status === RequestStatus.PENDING) values.pending = Number(entry.count);
-    if (entry.status === RequestStatus.APPROVED) values.approved = Number(entry.count);
-    if (entry.status === RequestStatus.REJECTED) values.rejected = Number(entry.count);
+    const values = activityByMonth.get(month) ?? { total: 0, pending: 0, approved: 0, rejected: 0, checkedOut: 0, returned: 0, overdue: 0 };
+    const count = Number(entry.count);
+    values.total += count;
+    if (entry.status === RequestStatus.PENDING) values.pending = count;
+    if (entry.status === RequestStatus.APPROVED) values.approved = count;
+    if (entry.status === RequestStatus.REJECTED) values.rejected = count;
+    if (entry.status === RequestStatus.CHECKED_OUT) values.checkedOut = count;
+    if (entry.status === RequestStatus.RETURNED) values.returned = count;
+    if (entry.status === RequestStatus.OVERDUE) values.overdue = count;
     activityByMonth.set(month, values);
   }
   res.json({

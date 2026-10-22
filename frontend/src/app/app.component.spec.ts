@@ -13,7 +13,7 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Build what');
-    expect(fixture.nativeElement.querySelector('#catalogue')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('#workflow')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#categories')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#how-it-works')).not.toBeNull();
   });
 });
