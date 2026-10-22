@@ -125,17 +125,13 @@ const PAGE_SIZES = [8, 16, 32] as const;
                     <span class="status-cell"><span class="status-pill" [class]="'status-pill ' + request.status.toLowerCase()"><i class="pi" [class]="statusIcon(request.status)"></i>{{ statusLabel(request.status) }}</span></span>
                     <div class="row-actions">
                       <a class="action-button view-button" [routerLink]="['/app/requests', request.id]"><i class="pi pi-eye"></i><span>View</span></a>
-                      <button class="action-button approve-button" type="button" [disabled]="request.status !== RequestStatus.PENDING || busyId() === request.id" (click)="approve(request)"><i class="pi pi-check-circle"></i><span>Approve</span></button>
-                      <button class="action-button reject-button" type="button" [disabled]="request.status !== RequestStatus.PENDING || busyId() === request.id" (click)="reject(request)"><i class="pi pi-times"></i><span>Reject</span></button>
-                    </div>
-                    <div class="more-cell">
-                      <button type="button" class="more-button" [attr.aria-label]="'More actions for ' + request.projectName" [attr.aria-expanded]="openActionId() === request.id" (click)="toggleActions(request.id)"><i class="pi pi-ellipsis-v"></i></button>
-                      @if (openActionId() === request.id) {
-                        <div class="action-menu">
-                          @if (request.status === RequestStatus.APPROVED) { <button type="button" [disabled]="busyId() === request.id" (click)="checkout(request)">Check out asset</button> }
-                          @if (request.status === RequestStatus.CHECKED_OUT) { <button type="button" [disabled]="busyId() === request.id" (click)="returnRequest(request)">Mark returned</button> }
-                          @if (request.status !== RequestStatus.APPROVED && request.status !== RequestStatus.CHECKED_OUT) { <span>No further actions</span> }
-                        </div>
+                      @if (request.status === RequestStatus.PENDING) {
+                        <button class="action-button approve-button" type="button" [disabled]="busyId() === request.id" (click)="approve(request)"><i class="pi pi-check-circle"></i><span>Approve</span></button>
+                        <button class="action-button reject-button" type="button" [disabled]="busyId() === request.id" (click)="reject(request)"><i class="pi pi-times"></i><span>Reject</span></button>
+                      } @else if (request.status === RequestStatus.APPROVED) {
+                        <button class="action-button approve-button" type="button" [disabled]="busyId() === request.id" (click)="checkout(request)"><i class="pi pi-sign-out"></i><span>Check Out</span></button>
+                      } @else if (request.status === RequestStatus.CHECKED_OUT) {
+                        <button class="action-button return-button" type="button" [disabled]="busyId() === request.id" (click)="returnRequest(request)"><i class="pi pi-replay"></i><span>Mark Returned</span></button>
                       }
                     </div>
                   </article>
@@ -295,7 +291,8 @@ const PAGE_SIZES = [8, 16, 32] as const;
     .date-cell small { padding-top:4px; color:#7c8492; font-size:10px; }
     .status-pill { width:max-content; max-width:100%; min-width:76px; min-height:27px; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:4px 9px; border:1px solid #ffe09b; border-radius:14px; background:#fffaf0; color:#b87300; font-size:10px; line-height:1.2; }
     .status-pill .pi { font-size:6px; }
-    .status-pill.approved,.status-pill.returned { border-color:#b6f0d5; background:#effdf6; color:#078a58; }
+    .status-pill.approved { border-color:#b6f0d5; background:#effdf6; color:#078a58; }
+    .status-pill.returned { border-color:#ddc8f7; background:#f7f1ff; color:#7844a5; }
     .status-pill.rejected { border-color:#ffc8ce; background:#fff2f3; color:#de3448; }
     .status-pill.checked_out { max-width:100%; min-height:27px; flex-wrap:wrap; border-color:#c8d9ff; background:#f1f6ff; color:#2360e8; }
     .status-pill.overdue { border-color:#e3c8ff; background:#faf3ff; color:#9b3bd0; }
@@ -355,6 +352,7 @@ const PAGE_SIZES = [8, 16, 32] as const;
       .table-footer { align-items:flex-start; flex-direction:column; padding:9px 10px; }
       .table-footer-controls { width:100%; justify-content:space-between; gap:5px; }
       .pagination { align-self:flex-end; }
+      .create-dialog { padding:18px; }
     }
     @media (max-width:390px) {
       .global-search { gap:5px; padding:0 7px; }
@@ -389,7 +387,6 @@ export class AdminRequestsPageComponent {
   protected readonly totalPages = signal(1);
   protected readonly selectedIds = signal<Set<string>>(new Set());
   protected readonly busyId = signal<string | null>(null);
-  protected readonly openActionId = signal<string | null>(null);
   protected readonly filterMenuOpen = signal(false);
   protected readonly message = signal('');
   protected readonly messageType = signal<'success' | 'error'>('success');
@@ -543,7 +540,6 @@ export class AdminRequestsPageComponent {
   private action(request: AssetRequest, operation: (id: string) => ReturnType<RequestService['approve']>, success: string): void {
     if (!confirm(`${success}?`)) return;
     this.busyId.set(request.id);
-    this.openActionId.set(null);
     this.message.set('');
     operation(request.id).pipe(finalize(() => this.busyId.set(null))).subscribe({
       next: () => {

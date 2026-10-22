@@ -17,6 +17,7 @@ export type BrandLogo = 'jkuat' | 'jhub' | 'jhub-africa';
     :host { display: inline-flex; align-items: center; min-width: 0; }
     img { display: block; width: auto; max-width: 100%; height: auto; object-fit: contain; }
     .header { max-width: 148px; max-height: 48px; }
+    .vault-header { width: 100%; max-width: 150px; max-height: 72px; }
     .footer { max-width: 170px; max-height: 54px; }
     .auth { max-width: 240px; max-height: 90px; }
     .sidebar-logo { max-width: 56px; max-height: 26px; }

@@ -16,6 +16,8 @@ Express + TypeScript + Prisma + PostgreSQL backend for the existing Angular appl
 
 The API runs at `http://localhost:3000/api`. Development seed credentials are documented here only: `admin@jhubafrica.example` / `ChangeMe123!` and `innovator@jhubafrica.example` / `ChangeMe123!`. Change them before any real deployment.
 
+Administrators can create a request on behalf of an innovator with `POST /api/admin/requests`. The endpoint accepts the normal request fields plus `innovatorId`, verifies that the user is an innovator and requested quantities are available, creates the request as pending, and records the action in the audit log.
+
 Do not run `prisma migrate reset`, delete applied migrations, or regenerate the baseline. For a deliberate schema change, create an additive migration, review it, apply it with `prisma migrate deploy`, and verify with `prisma migrate status`.
 
 ## Validation
