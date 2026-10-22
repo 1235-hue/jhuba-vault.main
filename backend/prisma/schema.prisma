@@ -109,6 +109,7 @@ enum AssetCategory {
   AV_PRESENTATION
   OFFICE_SUPPLIES
   FURNITURE
+  SOFTWARE
 }
 
 enum RequestStatus {
