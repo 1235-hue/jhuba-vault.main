@@ -1,31 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
-
-interface Metric {
-  title: string;
-  value: string;
-  label: string;
-  detail: string;
-}
-
-interface Category {
-  icon: string;
-  title: string;
-  detail: string;
-}
-
-interface WorkflowStep {
-  number: string;
-  icon: string;
-  title: string;
-  detail: string;
-  link: string;
-}
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd } from '@angular/router';
 import { filter, forkJoin, map, startWith } from 'rxjs';
 import { AssetCategory, AssetRequest, AuditLog, RequestStatus, Role } from './core/models';
 import { AdminDashboard, AdminService, RequestService } from './core/api.service';
@@ -39,13 +14,10 @@ import { BrandLogoComponent } from './shared/brand-logo.component';
   imports: [RouterLink, RouterLinkActive, RouterOutlet, BrandLogoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (isAdminRequests()) {
-      <router-outlet></router-outlet>
-    } @else {
     <header class="topbar">
       <a class="brand" routerLink="/" aria-label="JHUB Africa Vault home"><jhub-brand-logo logo="jhub-africa" variant="header"></jhub-brand-logo><span><strong>AFRICA VAULT</strong><small>ASSET TRACKING</small></span></a>
       <button class="menu-toggle" type="button" aria-label="Toggle navigation" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.update(open => !open)">☰</button>
-      <nav class="desktop-nav" [class.mobile-open]="menuOpen()" aria-label="Primary navigation" (click)="menuOpen.set(false)">@if (auth.user()?.role === Role.ADMIN) {<a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a><a routerLink="/admin/requests" routerLinkActive="active">Requests</a><a routerLink="/admin/assets" routerLinkActive="active">Assets</a><a routerLink="/admin/inventory" routerLinkActive="active">Inventory</a><a routerLink="/admin/users" routerLinkActive="active">Users</a><a routerLink="/admin/audit-log" routerLinkActive="active">Audit Log</a><a routerLink="/admin/settings" routerLinkActive="active">Settings</a>} @else if (auth.user()) {<a routerLink="/app/dashboard">Dashboard</a><a routerLink="/catalogue">Catalogue</a><a routerLink="/app/requests">My Requests</a><a routerLink="/app/loans">Active Loans</a>} @else {<a routerLink="/catalogue">Catalogue</a><a href="#how-it-works">How it works</a><a href="#categories">Categories</a>}</nav>
+      <nav class="desktop-nav" [class.mobile-open]="menuOpen()" aria-label="Primary navigation" (click)="menuOpen.set(false)">@if (auth.user()?.role === Role.ADMIN) {<a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a><a routerLink="/admin/requests" routerLinkActive="active">Requests</a><a routerLink="/admin/assets" routerLinkActive="active">Assets</a><a routerLink="/admin/inventory" routerLinkActive="active">Inventory</a><a routerLink="/admin/users" routerLinkActive="active">Users</a><a routerLink="/admin/audit-log" routerLinkActive="active">Audit Log</a><a routerLink="/admin/settings" routerLinkActive="active">Settings</a>} @else if (auth.user()) {<a routerLink="/app/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a><a routerLink="/catalogue" routerLinkActive="active">Catalogue</a><a routerLink="/app/requests" routerLinkActive="active">My Requests</a><a routerLink="/app/loans" routerLinkActive="active">Active Loans</a>} @else {<a routerLink="/catalogue" routerLinkActive="active">Catalogue</a><a href="#how-it-works">How it works</a><a href="#categories">Categories</a>}</nav>
       <div class="nav-actions">
         @if (auth.user()) { <a class="user-chip" [routerLink]="auth.isAdmin() ? '/admin/dashboard' : '/app/dashboard'">{{ auth.user()?.fullName }}</a><button class="text-button" type="button" (click)="auth.signOut()">Sign out</button> }
         @else { <a class="text-button" routerLink="/auth/login">Sign in</a><a class="primary-button compact" routerLink="/auth/register">Create account</a> }
@@ -60,13 +32,12 @@ import { BrandLogoComponent } from './shared/brand-logo.component';
         <section class="process-band" id="how-it-works"><div class="page-width process-content"><div><p class="eyebrow light">DESIGNED FOR ACCOUNTABILITY</p><h2>Simple to borrow.<br><em>Easy to trust.</em></h2></div><div class="process-list"><div><span>01</span><p><strong>Find your components</strong><small>Browse live inventory by category, availability, or asset tag.</small></p></div><div><span>02</span><p><strong>Make a project request</strong><small>Tell us what you are building, who is involved, and how long you need it.</small></p></div><div><span>03</span><p><strong>Stay in control</strong><small>Every handover, due date, and return lives in one transparent record.</small></p></div></div></div></section>
         <section class="cta-band page-width"><div><p class="eyebrow">YOUR NEXT PROTOTYPE STARTS HERE</p><h2>What will you make<br>with the <em>Vault?</em></h2></div><a class="primary-button light-button" routerLink="/catalogue">Explore the catalogue <span>→</span></a></section>
       </main>
-    } @else if (isCatalogue()) { <main class="page-width catalogue-page"><div class="catalogue-intro"><div><p class="eyebrow">PUBLIC CATALOGUE</p><h1>Tools for the <em>work ahead.</em></h1><p>Explore the physical assets available to JHUB Africa innovators.</p></div><div class="search-box"><span>⌕</span><input aria-label="Search assets" placeholder="Search by name, tag or specification"></div></div><div class="filter-row"><button class="filter-active">All assets</button><button>IoT & prototyping</button><button>Computing</button><button>Networking</button><button>AV & presentation</button></div><div class="asset-grid">@for (asset of assets; track asset.tag) {<article class="asset-card"><div class="asset-visual" [style.--accent]="asset.accent"><span>{{ asset.icon }}</span><small>{{ asset.category.replace('_', ' ') }}</small></div><div class="asset-info"><div><p class="asset-tag">{{ asset.tag }}</p><h3>{{ asset.name }}</h3></div><div class="asset-meta"><span class="stock"><i></i>{{ asset.available }} available</span><span>{{ asset.total }} total</span></div><a class="asset-link" [routerLink]="['/assets', asset.tag]">View details <span>↗</span></a></div></article>}</div></main> }
+    } @else if (isCatalogue()) { <main class="page-width catalogue-page"><div class="catalogue-intro"><div><p class="eyebrow">PUBLIC CATALOGUE</p><h1>Tools for the <em>work ahead.</em></h1><p>Explore the physical assets available to JHUB Africa innovators.</p></div><div class="search-box"><span>⌕</span><input aria-label="Search assets" placeholder="Search by name, tag or specification"></div></div><div class="filter-row"><button class="filter-active">All assets</button><button>IoT & prototyping</button><button>Computing</button><button>Networking</button><button>AV & presentation</button></div><div class="asset-grid">@for (asset of assets(); track asset.tag) {<article class="asset-card"><div class="asset-visual" [style.--accent]="asset.accent"><span>{{ asset.icon }}</span><small>{{ asset.category.replace('_', ' ') }}</small></div><div class="asset-info"><div><p class="asset-tag">{{ asset.tag }}</p><h3>{{ asset.name }}</h3></div><div class="asset-meta"><span class="stock"><i></i>{{ asset.available }} available</span><span>Tracked asset</span></div><a class="asset-link" [routerLink]="['/assets', asset.tag]">View details <span>↗</span></a></div></article>}</div></main> }
     @else if (isAuth()) { <main class="auth-page"><div class="auth-panel"><p class="eyebrow">JHUB AFRICA VAULT</p><h1>{{ isRegister() ? 'Make room for your next idea.' : 'Welcome back, innovator.' }}</h1><p>{{ isRegister() ? 'Create your innovator account to request and track JHUB assets.' : 'Sign in to manage your requests, loans, and profile.' }}</p><form (submit)="$event.preventDefault(); auth.signIn(isAdminLogin() ? Role.ADMIN : Role.INNOVATOR)"><label>Email address<input type="email" required placeholder="you@example.com"></label><label>Password<input type="password" required placeholder="Enter your password"></label>@if (isRegister()) {<label>Full name<input type="text" required placeholder="Your full name"></label>}<button class="primary-button submit-button" type="submit">{{ isRegister() ? 'Create innovator account' : 'Sign in' }} <span>→</span></button></form><p class="form-foot">Demo entry is wired to the typed auth store. Backend authentication connects at the service boundary.</p></div><div class="auth-aside"><span class="aside-mark">J</span><h2>Good tools make<br><em>bold work</em> possible.</h2></div></main> }
     @else if (isAdmin()) { <main class="dashboard page-width"><div class="dashboard-head"><div><p class="eyebrow">ADMINISTRATION / OVERVIEW</p><h1>Good morning, <em>administrator.</em></h1></div><a class="primary-button" routerLink="/admin/requests">Review requests <span>→</span></a></div>@if (dashboardLoading()) { <div class="dashboard-state">Loading dashboard metrics…</div> } @else if (dashboardError()) { <div class="dashboard-state error" role="alert">{{ dashboardError() }}</div> } @else if (adminMetrics(); as metrics) { <div class="metric-grid"><div class="metric-card accent-blue"><small>PENDING REQUESTS</small><strong>{{ metrics.pendingRequests }}</strong><span>Awaiting review</span></div><div class="metric-card accent-green"><small>AVAILABLE INVENTORY</small><strong>{{ metrics.availableInventory }}</strong><span>Available units</span></div><div class="metric-card accent-red"><small>OVERDUE LOANS</small><strong>{{ metrics.overdueRequests }}</strong><span>Needs attention</span></div><div class="metric-card"><small>USERS</small><strong>{{ metrics.users }}</strong><span>Registered accounts</span></div><div class="metric-card"><small>TOTAL ASSETS</small><strong>{{ metrics.totalAssets }}</strong><span>Tracked records</span></div><div class="metric-card"><small>ASSETS ON LOAN</small><strong>{{ metrics.checkedOutRequests }}</strong><span>Checked out requests</span></div></div><div class="dashboard-lower"><section class="dashboard-section"><div class="section-heading compact-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>Audit log</h2></div><a class="arrow-link" routerLink="/admin/audit-log">See all ↗</a></div>@if (auditLogs().length) { @for (log of auditLogs().slice(0, 3); track log.id) {<div class="request-row"><span class="request-avatar">{{ log.actor?.fullName?.slice(0, 2)?.toUpperCase() || 'SY' }}</span><div><strong>{{ log.action }}</strong><small>{{ log.actor?.fullName || 'System' }} · {{ log.entityType }}</small></div><span class="status approved">LOGGED</span></div>} } @else { <div class="dashboard-state">No audit activity recorded yet.</div> }</section><section class="quick-panel"><p class="eyebrow">QUICK ACCESS</p><a routerLink="/admin/assets"><span>▦</span>Manage assets <b>↗</b></a><a routerLink="/admin/inventory"><span>◫</span>View inventory <b>↗</b></a><a routerLink="/admin/users"><span>◎</span>Innovator directory <b>↗</b></a></section></div> }</main> }
     @else if (isDashboardShell()) { <main class="dashboard page-width"><div class="dashboard-head"><div><p class="eyebrow">INNOVATOR WORKSPACE</p><h1>Your ideas, <em>in motion.</em></h1><p>Welcome back. Here is the pulse of your JHUB activity.</p></div><a class="primary-button" routerLink="/catalogue">Find assets <span>→</span></a></div>@if (dashboardLoading()) { <div class="dashboard-state">Loading dashboard metrics…</div> } @else if (dashboardError()) { <div class="dashboard-state error" role="alert">{{ dashboardError() }}</div> } @else { <div class="metric-grid"><div class="metric-card accent-blue"><small>ACTIVE REQUESTS</small><strong>{{ activeRequestCount() }}</strong><span>Pending or approved</span></div><div class="metric-card accent-green"><small>ACTIVE LOANS</small><strong>{{ activeLoanCount() }}</strong><span>Checked out or overdue</span></div><div class="metric-card"><small>RETURNED ASSETS</small><strong>{{ returnedRequestCount() }}</strong><span>Returned requests</span></div></div><section class="welcome-panel"><div><p class="eyebrow">KEEP BUILDING</p><h2>Have a new project<br>in mind?</h2><p>Find the components your team needs and start a request in a few minutes.</p><a class="arrow-link" routerLink="/catalogue">Browse the Vault ↗</a></div><span class="welcome-symbol">+</span></section> }</main> }
     @else { <main class="routed-page"></main> }
     <router-outlet></router-outlet>
-    }
   `,
   styles: [`
     :host { display:block; min-height:100vh; } .page-width{width:min(1160px,calc(100% - 48px));margin:auto}.topbar{height:78px;background:#fff;border-bottom:1px solid #e6e8ee;display:flex;align-items:center;padding:0 max(24px,calc((100% - 1160px)/2));gap:48px}.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#262571}.brand-mark{display:grid;place-items:center;width:34px;height:34px;background:#262571;color:#fff;font-family:Georgia,serif;font-size:23px}.brand strong{display:block;font:700 15px Georgia,serif;letter-spacing:1px}.brand small{display:block;font-size:8px;letter-spacing:2px}.desktop-nav{display:flex;gap:30px;flex:1}.desktop-nav a,.text-button{color:#586174;text-decoration:none;font-size:13px}.nav-actions{display:flex;align-items:center;gap:20px}.user-chip{font-size:13px;color:#262571;text-decoration:none;font-weight:600}.primary-button,.secondary-button{display:inline-flex;align-items:center;gap:22px;padding:15px 20px;border:0;text-decoration:none;font-weight:700;font-size:13px}.primary-button{background:#262571;color:#fff}.primary-button span,.light-button span{font-size:18px}.primary-button.compact{padding:11px 15px;gap:12px}.secondary-button{border:1px solid #cfd4df;color:#262571}.hero{min-height:560px;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:60px}.eyebrow{color:#3ea945;font-size:10px;font-weight:800;letter-spacing:2px;margin:0 0 18px}.hero h1,.catalogue-intro h1,.auth-panel h1,.dashboard h1{font:400 clamp(42px,5vw,68px)/1.02 Georgia,serif;color:#262571;margin:0}.hero h1 em,.catalogue-intro h1 em,.auth-panel h1 em,.dashboard h1 em,h2 em{color:#3ea945;font-style:italic}.hero-lede{max-width:500px;color:#5e6675;line-height:1.7;font-size:16px;margin:25px 0}.hero-actions{display:flex;gap:12px;flex-wrap:wrap}.hero-note{display:flex;align-items:center;gap:8px;color:#7c8492;font-size:11px;margin-top:27px}.live-dot{width:7px;height:7px;background:#3ea945;border-radius:50%}.hero-art{height:380px;background:#e8edf7;position:relative;overflow:hidden}.art-grid{position:absolute;inset:0;background-image:linear-gradient(#fff6 1px,transparent 1px),linear-gradient(90deg,#fff6 1px,transparent 1px);background-size:36px 36px;transform:rotate(-12deg) scale(1.3)}.art-card{position:absolute;background:#fff;box-shadow:0 18px 40px #26257120}.art-card-main{width:220px;padding:28px;left:25%;top:28%;transform:rotate(-6deg)}.art-card-main strong,.art-card-main small{display:block}.art-card-main strong{font:22px Georgia,serif;color:#262571;margin:14px 0 6px}.art-card-main small{font-size:10px;color:#7c8492;letter-spacing:1px}.art-icon{font-size:42px;color:#3ea945}.availability{margin-top:24px;font-size:11px;color:#3ea945}.availability span,.stock i{display:inline-block;width:7px;height:7px;background:#3ea945;border-radius:50%;margin-right:5px}.art-card-small{right:7%;bottom:14%;padding:15px 20px;transform:rotate(8deg)}.mini-number{font:34px Georgia,serif;color:#e6292a;display:block}.art-card-small small{font-size:9px;text-transform:uppercase;letter-spacing:1px}.orbit{position:absolute;border:1px solid #2a469555;border-radius:50%;width:300px;height:180px;left:12%;top:25%;transform:rotate(30deg)}.orbit-two{width:370px;height:250px;left:0;top:12%;transform:rotate(-35deg);border-color:#3ea955}.stats-strip{background:#262571;color:#fff}.stats{display:grid;grid-template-columns:repeat(3,1fr);padding:25px 0}.stats div{display:flex;align-items:center;gap:15px;border-right:1px solid #ffffff30;padding-left:25px}.stats div:first-child{padding-left:0}.stats div:last-child{border:0}.stats strong{color:#89be32;font:25px Georgia,serif}.stats span{font-size:12px}.section{padding:110px 0}.section-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:42px}.section-heading h2,.process-band h2,.cta-band h2{font:400 43px/1.08 Georgia,serif;color:#262571;margin:0}.arrow-link{color:#262571;font-size:12px;font-weight:700;text-decoration:none}.arrow-link span{color:#3ea945;font-size:18px}.category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.category-card{min-height:125px;padding:22px;background:#fff;display:flex;align-items:center;gap:17px;text-decoration:none;color:#262571;border:1px solid #e6e8ee;position:relative}.category-icon{font-size:26px;color:#3ea945}.category-card strong,.category-card small{display:block}.category-card strong{font:20px Georgia,serif}.category-card small{font-size:11px;color:#7c8492;margin-top:8px}.card-arrow{position:absolute;right:18px;top:18px;color:#3ea945}.process-band{background:#262571;color:#fff;padding:90px 0}.process-content{display:grid;grid-template-columns:1fr 1fr;gap:80px}.light{color:#89be32}.process-band h2{color:#fff}.process-list>div{display:flex;gap:22px;padding:16px 0;border-bottom:1px solid #ffffff25}.process-list span{color:#89be32;font:20px Georgia,serif}.process-list p{margin:0}.process-list strong,.process-list small{display:block}.process-list strong{font-size:15px}.process-list small{color:#c5cade;font-size:12px;line-height:1.5;margin-top:7px}.cta-band{display:flex;align-items:center;justify-content:space-between;padding-top:95px;padding-bottom:95px}.light-button{background:#3ea945}.footer{background:#fff;border-top:1px solid #e6e8ee}.footer>div{display:flex;align-items:center;justify-content:space-between;padding:30px 0;font-size:11px;color:#7c8492}.footer p{line-height:1.5}.footer-brand{margin-right:auto}.catalogue-page{padding:72px 0 110px}.catalogue-intro{display:flex;align-items:end;justify-content:space-between;gap:25px}.catalogue-intro h1{font-size:55px}.catalogue-intro>div:first-child p:last-child{color:#667083}.search-box{display:flex;align-items:center;background:#fff;border:1px solid #dce0e8;padding:0 15px;width:300px}.search-box span{font-size:25px;color:#3ea945}.search-box input{border:0;padding:15px;width:100%;outline:0;font-size:12px}.filter-row{display:flex;gap:8px;margin:45px 0 24px;overflow:auto}.filter-row button{white-space:nowrap;border:1px solid #dce0e8;background:#fff;padding:11px 15px;color:#667083;font-size:11px}.filter-row .filter-active{background:#262571;border-color:#262571;color:#fff}.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.asset-card{background:#fff;border:1px solid #e6e8ee}.asset-visual{height:190px;background:color-mix(in srgb,var(--accent) 13%,#fff);display:flex;align-items:center;justify-content:center;position:relative}.asset-visual span{font:75px Georgia,serif;color:var(--accent)}.asset-visual small{position:absolute;top:14px;left:15px;font-size:9px;color:#667083;letter-spacing:1px}.asset-info{padding:20px}.asset-tag{margin:0;color:#3ea945;font-size:9px;letter-spacing:1px}.asset-info h3{font:22px Georgia,serif;color:#262571;margin:6px 0 20px}.asset-meta{display:flex;justify-content:space-between;color:#7c8492;font-size:11px;padding-bottom:15px;border-bottom:1px solid #edf0f4}.stock{color:#3ea945}.asset-link{display:flex;justify-content:space-between;text-decoration:none;color:#262571;font-size:11px;font-weight:700;padding-top:15px}.asset-link span{color:#3ea945;font-size:17px}.auth-page{min-height:calc(100vh - 78px);display:grid;grid-template-columns:1fr 1fr}.auth-panel{background:#fff;padding:clamp(35px,8vw,120px);display:flex;flex-direction:column;justify-content:center}.auth-panel h1{font-size:48px}.auth-panel>p:not(.eyebrow){color:#667083;line-height:1.6;max-width:390px;margin:20px 0 30px}.auth-panel form{display:grid;gap:16px;max-width:390px}.auth-panel label{font-size:11px;color:#586174}.auth-panel input{display:block;width:100%;border:1px solid #dce0e8;margin-top:7px;padding:13px;outline-color:#3ea945}.submit-button{width:100%;justify-content:space-between;margin-top:8px}.form-foot{font-size:10px!important;color:#8d95a3!important}.auth-aside{background:#262571;color:#fff;padding:100px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}.aside-mark{font:170px Georgia,serif;color:#3ea945;opacity:.8}.auth-aside h2{font:400 45px Georgia,serif}.auth-aside h2 em{color:#89be32}.dashboard{padding:65px 0 110px}.dashboard-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:42px}.dashboard-head>div>p:last-child{color:#667083;font-size:13px}.dashboard h1{font-size:45px}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.metric-card{padding:24px;background:#fff;border-top:4px solid #dce0e8}.metric-card.accent-blue{border-color:#2a4695}.metric-card.accent-green{border-color:#3ea945}.metric-card.accent-red{border-color:#e6292a}.metric-card small,.metric-card strong,.metric-card span{display:block}.metric-card small{font-size:9px;letter-spacing:1px;color:#7c8492}.metric-card strong{font:44px Georgia,serif;color:#262571;margin:23px 0 12px}.metric-card span{font-size:11px;color:#667083}.dashboard-lower{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:22px}.dashboard-section,.quick-panel,.welcome-panel{background:#fff;padding:25px}.compact-heading{margin-bottom:20px}.compact-heading h2{font-size:28px}.request-row{display:flex;align-items:center;gap:12px;border-top:1px solid #edf0f4;padding:14px 0}.request-avatar{display:grid;place-items:center;width:34px;height:34px;background:#e5eafa;color:#2a4695;font-size:10px;font-weight:700}.request-avatar.green{background:#e7f4e7;color:#3ea945}.request-row>div{flex:1}.request-row strong,.request-row small{display:block}.request-row strong{font-size:12px;color:#262571}.request-row small{font-size:10px;color:#7c8492;margin-top:4px}.request-row button{border:0;background:transparent;color:#3ea945}.status{font-size:9px;font-weight:800;letter-spacing:1px}.status.pending{color:#b17b19}.status.approved{color:#3ea945}.quick-panel a{display:flex;align-items:center;gap:12px;padding:17px 0;border-bottom:1px solid #edf0f4;color:#262571;text-decoration:none;font-size:12px}.quick-panel a span{color:#3ea945;font-size:19px}.quick-panel a b{margin-left:auto;color:#3ea945}.welcome-panel{margin-top:22px;display:flex;justify-content:space-between;overflow:hidden}.welcome-panel h2{font:400 36px Georgia,serif;color:#262571;margin:0}.welcome-panel p:not(.eyebrow){color:#667083;font-size:12px;line-height:1.5}.welcome-symbol{font:220px/1 Georgia,serif;color:#e7edf9;align-self:end;margin:-30px -10px -40px 0}
@@ -77,40 +48,81 @@ export class AppComponent {
   protected readonly auth = inject(AuthStore);
   protected readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
+
   private readonly adminService = inject(AdminService);
   private readonly requestService = inject(RequestService);
+
   protected readonly assetStore = inject(AssetStore);
   protected readonly dashboardLoading = signal(false);
   protected readonly dashboardError = signal<string | null>(null);
   protected readonly adminMetrics = signal<AdminDashboard | null>(null);
   protected readonly auditLogs = signal<AuditLog[]>([]);
   protected readonly innovatorRequests = signal<AssetRequest[]>([]);
+
+  protected readonly Role = Role;
+
+  private readonly navigationUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map(event => event.urlAfterRedirects),
+      startWith(this.router.url)
+    ),
+    { initialValue: this.router.url }
+  );
+
   constructor() {
-    const subscription = this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(event => this.showLanding.set(event.urlAfterRedirects === '/'));
-    this.destroyRef.onDestroy(() => subscription.unsubscribe());
+    this.auth.hydrate().subscribe();
+    this.assetStore.load();
+
+    effect(() => {
+      const user = this.auth.user();
+      const url = this.navigationUrl();
+
+      if (!user) {
+        this.dashboardLoading.set(false);
+        return;
+      }
+
+      if (url === '/admin/dashboard' || url === '/app/dashboard') {
+        this.loadDashboard(user.role);
+      }
+    });
   }
 
-  readonly metrics: Metric[] = [
-    { title: 'Asset inventory', value: '210+', label: 'Verified assets', detail: 'Physical and IoT instruments in custody.' },
-    { title: 'Active cohorts', value: '14', label: 'Innovation hubs', detail: 'Regional university and lab nodes.' },
-    { title: 'Deployment rate', value: '88%', label: 'Real-time utilization', detail: 'Assets actively supporting projects.' },
-    { title: 'SLA guarantee', value: '< 24h', label: 'Custodial SLA', detail: 'Fast verification and handoff.' }
-  ];
+  protected readonly isHome = computed(() => {
+    const url = this.navigationUrl();
+    return url === '/' || url === '/landing';
+  });
 
-  readonly categories: Category[] = [
-    { icon: 'pi pi-desktop', title: 'Computing peripherals', detail: 'Displays, boards and input devices.' },
-    { icon: 'pi pi-share-alt', title: 'Networking infrastructure', detail: 'Switches, routers and connectivity.' },
-    { icon: 'pi pi-microchip', title: 'IoT & prototyping', detail: 'Sensors, kits and embedded tools.' },
-    { icon: 'pi pi-video', title: 'AV & presentation', detail: 'Projectors, cameras and audio.' },
-    { icon: 'pi pi-briefcase', title: 'Office supplies', detail: 'Practical tools for project teams.' },
-    { icon: 'pi pi-home', title: 'Furniture', detail: 'Workspaces, seating and fixtures.' }
-  ];
+  protected readonly isCatalogue = computed(() =>
+    this.navigationUrl().split('?')[0].replace(/\/$/, '') === '/catalogue'
+  );
 
-  readonly workflow: WorkflowStep[] = [
-    { number: '01', icon: 'pi pi-user', title: 'Browse & reserve', detail: 'Discover available components and reserve what your team needs.', link: 'View available inventory' },
-    { number: '02', icon: 'pi pi-file-edit', title: 'Submit abstract', detail: 'Share your project abstract for identity and cohort verification.', link: 'Start a project request' },
-    { number: '03', icon: 'pi pi-box', title: 'Lab dispatch', detail: 'Collect verified hardware with barcode and serial tracking.', link: 'Review the handoff flow' }
-  ];
-}
+  protected readonly isAuth = computed(() => {
+    const url = this.navigationUrl().split('?')[0];
+    return url.startsWith('/auth/') || url === '/admin/login';
+  });
+
+  protected readonly isRegister = computed(() =>
+    this.navigationUrl().split('?')[0] === '/auth/register'
+  );
+
+  protected readonly isAdminLogin = computed(() =>
+    this.navigationUrl().split('?')[0] === '/admin/login'
+  );
+
+  protected readonly isAdmin = computed(() => {
+    const url = this.navigationUrl().split('?')[0];
+    return url.startsWith('/admin/') && url !== '/admin/login';
+  });
+
+  protected readonly isDashboardShell = computed(() =>
+    this.navigationUrl().split('?')[0] === '/app/dashboard'
+  );
+
+  protected readonly categories = [
+    { label: 'IoT & Prototyping', value: AssetCategory.IOT_PROTOTYPING, icon: '⌁' },
+    { label: 'Computing Peripherals', value: AssetCategory.COMPUTING_PERIPHERALS, icon: '▣' },
+    { label: 'Networking Infrastructure', value: AssetCategory.NETWORKING_INFRASTRUCTURE, icon: '⌘' },
+    { label: 'AV & Presentation', value: AssetCategory.AV_PRESENTATION, icon: '◉' },
+    { label: 'Office Supplies', value: AssetCategory.OFFICE_SUPPLIES, icon: '▤' },

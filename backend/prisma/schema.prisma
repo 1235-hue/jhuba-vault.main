@@ -4,7 +4,97 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(uuid())
+  fullName         String
+  email            String         @unique
+  passwordHash     String
+  phoneNumber      String
+  identificationId String         @unique
+  department       String?
+  bio              String?
+  githubUrl        String?
+  avatarUrl        String?
+  role             Role           @default(INNOVATOR)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  requests         AssetRequest[]
+  auditLogs        AuditLog[]
+}
+
+model Asset {
+  id             String        @id @default(uuid())
+  assetTag       String        @unique
+  name           String
+  category       AssetCategory
+  description    String
+  totalQuantity  Int           @default(1)
+  availableQty   Int           @default(1)
+  imageUrl       String?
+  imagePublicId  String?
+  specifications Json
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  price          Decimal       @default(0) @db.Decimal(12, 2)
+  requestItems   RequestItem[]
+}
+
+model AssetRequest {
+  id              String        @id @default(uuid())
+  projectName     String
+  projectAbstract String
+  loanDays        Int
+  status          RequestStatus @default(PENDING)
+  rejectionReason String?
+  startDate       DateTime
+  expectedReturn  DateTime
+  actualReturn    DateTime?
+  innovatorId     String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  innovator       User          @relation(fields: [innovatorId], references: [id])
+  requestItems    RequestItem[]
+  teamMembers     TeamMember[]
+
+  @@index([innovatorId, status])
+}
+
+model TeamMember {
+  id            String       @id @default(uuid())
+  fullName      String
+  email         String
+  phoneNumber   String
+  studentOrIdNo String
+  roleInProject String
+  requestId     String
+  request       AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model RequestItem {
+  id        String       @id @default(uuid())
+  quantity  Int
+  requestId String
+  assetId   String
+  asset     Asset        @relation(fields: [assetId], references: [id])
+  request   AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, assetId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
 }
 
 enum Role {
@@ -28,91 +118,4 @@ enum RequestStatus {
   CHECKED_OUT
   RETURNED
   OVERDUE
-}
-
-model User {
-  id String @id @default(uuid())
-  fullName String
-  email String @unique
-  passwordHash String
-  phoneNumber String
-  identificationId String @unique
-  department String?
-  bio String?
-  githubUrl String?
-  avatarUrl String?
-  role Role @default(INNOVATOR)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  requests AssetRequest[]
-  auditLogs AuditLog[]
-}
-
-model Asset {
-  id String @id @default(uuid())
-  assetTag String @unique
-  name String
-  category AssetCategory
-  description String
-  price Decimal @db.Decimal(12, 2) @default(0)
-  totalQuantity Int @default(1)
-  availableQty Int @default(1)
-  imageUrl String?
-  imagePublicId String?
-  specifications Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  requestItems RequestItem[]
-}
-
-model AssetRequest {
-  id String @id @default(uuid())
-  projectName String
-  projectAbstract String
-  loanDays Int
-  status RequestStatus @default(PENDING)
-  rejectionReason String?
-  startDate DateTime
-  expectedReturn DateTime
-  actualReturn DateTime?
-  innovatorId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  innovator User @relation(fields: [innovatorId], references: [id])
-  teamMembers TeamMember[]
-  requestItems RequestItem[]
-  @@index([innovatorId, status])
-}
-
-model TeamMember {
-  id String @id @default(uuid())
-  fullName String
-  email String
-  phoneNumber String
-  studentOrIdNo String
-  roleInProject String
-  requestId String
-  request AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-}
-
-model RequestItem {
-  id String @id @default(uuid())
-  quantity Int
-  requestId String
-  assetId String
-  request AssetRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  @@unique([requestId, assetId])
-}
-
-model AuditLog {
-  id String @id @default(uuid())
-  actorId String?
-  action String
-  entityType String
-  entityId String
-  metadata Json?
-  createdAt DateTime @default(now())
-  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  @@index([entityType, entityId])
 }

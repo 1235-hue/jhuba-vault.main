@@ -6,6 +6,7 @@ import { RequestStatus } from '../core/models';
 @Component({
   selector: 'jhub-request-submitted-page',
   standalone: true,
+  styleUrls: ['./innovator-theme.component.css'],
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

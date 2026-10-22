@@ -122,19 +122,18 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
                   placeholder="712345678"
                   maxlength="9"
                   inputmode="numeric"
-                  autocomplete="tel"
-                  (input)="formatPhone()"
+                  autocomplete="tel-national"
                 />
 
               </div>
 
               <span class="phone-help">
-                Enter your Kenyan number starting with 07, e.g. 0712345678
+                Enter the 9 digits after +254, starting with 7 or 1.
               </span>
 
               @if (invalid('phoneNumber')) {
                 <small>
-                  Enter a valid Kenyan phone number, e.g. 0712345678.
+                  Enter a valid Kenyan phone number (e.g. 712345678). Do not include the leading 0.
                 </small>
               }
 
@@ -459,25 +458,11 @@ export class AuthPageComponent {
       ]
     ],
 
-    /*
-     * IMPORTANT:
-     *
-     * The user enters:
-     *
-     *     0712345678
-     *
-     * We convert it before sending:
-     *
-     *     +254712345678
-     *
-     * Only the 9 digits after the leading 0 are stored
-     * in the phone input itself.
-     */
     phoneNumber: [
       '',
       [
         Validators.required,
-        Validators.pattern(/^07\d{8}$/)
+        Validators.pattern(/^[17]\d{8}$/)
       ]
     ],
 
@@ -507,59 +492,9 @@ export class AuthPageComponent {
       (control.dirty || control.touched);
   }
 
-  protected formatPhone(): void {
-
-    const control = this.form.controls.phoneNumber;
-
-    let value = control.value ?? '';
-
-    /*
-     * Remove spaces, +, brackets, dashes and letters.
-     * The user should only enter digits.
-     */
-    value = value.replace(/\D/g, '');
-
-    /*
-     * If the user starts typing +254 or 254,
-     * automatically convert it back to the local
-     * 07XXXXXXXX format.
-     *
-     * This makes the field forgiving if they paste
-     * an international number.
-     */
-    if (value.startsWith('254')) {
-      value = '0' + value.substring(3);
-    }
-
-    /*
-     * Make sure it starts with 07.
-     */
-    if (value.length > 0 && !value.startsWith('0')) {
-      value = '0' + value;
-    }
-
-    /*
-     * Only allow 10 digits:
-     *
-     * 0712345678
-     */
-    value = value.substring(0, 10);
-
-    control.setValue(value, {
-      emitEvent: false
-    });
-  }
-
   protected submit(): void {
 
     this.form.markAllAsTouched();
-
-    /*
-     * Always normalize the phone before validation/submission.
-     */
-    if (this.mode() === 'register') {
-      this.formatPhone();
-    }
 
     const values = this.form.getRawValue();
 
@@ -583,23 +518,11 @@ export class AuthPageComponent {
 
     if (this.mode() === 'register') {
 
-      /*
-       * Convert:
-       *
-       * 0712345678
-       *
-       * to:
-       *
-       * +254712345678
-       */
-      const phoneNumber =
-        this.toInternationalPhone(values.phoneNumber);
-
       this.auth.register({
         fullName: values.fullName,
         email: values.email,
         password: values.password,
-        phoneNumber,
+        phoneNumber: this.toInternationalPhone(values.phoneNumber),
         identificationId: values.identificationId
       });
 
@@ -614,31 +537,6 @@ export class AuthPageComponent {
   }
 
   private toInternationalPhone(phone: string): string {
-
-    const digits = phone.replace(/\D/g, '');
-
-    /*
-     * 0712345678
-     *      ↓
-     * 712345678
-     *      ↓
-     * +254712345678
-     */
-    if (digits.startsWith('0')) {
-      return '+254' + digits.substring(1);
-    }
-
-    /*
-     * Also support 254712345678
-     * if something bypasses the UI.
-     */
-    if (digits.startsWith('254')) {
-      return '+' + digits;
-    }
-
-    /*
-     * Fallback.
-     */
-    return '+254' + digits;
+    return `+254${phone}`;
   }
 }

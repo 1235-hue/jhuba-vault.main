@@ -2,14 +2,16 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs';
-import { Asset, AssetCategory, AssetRequest, AuditLog, TeamMember, User } from './models';
+import { Asset, AssetCategory, AssetRequest, AuditLog, RequestStatus, TeamMember, User } from './models';
 
 const API_URL = '/api';
 interface ApiResponse<T> { success: boolean; data: T; }
 export interface AuthCredentials { email: string; password: string; }
 export interface RegistrationData extends AuthCredentials { fullName: string; phoneNumber: string; identificationId: string; department?: string; }
 export interface AuthResponse { user: User; token: string; }
-export interface AdminRequestPage { items: AssetRequest[]; page: number; limit: number; total: number; totalPages: number; }
+export interface HealthStatus { status: 'ok'; service: string; }
+export interface AdminRequestCounts extends Record<RequestStatus, number> { total: number; }
+export interface AdminRequestPage { items: AssetRequest[]; page: number; limit: number; total: number; totalPages: number; statusCounts?: AdminRequestCounts; }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -47,12 +49,14 @@ export class RequestService {
   checkout(id: string): Observable<AssetRequest> { return this.http.patch<ApiResponse<AssetRequest>>(`${API_URL}/admin/requests/${id}/checkout`, {}).pipe(map(response => response.data)); }
   returnAsset(id: string): Observable<AssetRequest> { return this.http.patch<ApiResponse<AssetRequest>>(`${API_URL}/admin/requests/${id}/return`, {}).pipe(map(response => response.data)); }
   listAdmin(filters?: { search?: string; status?: string }): Observable<AssetRequest[]> { return this.listAdminPage(filters).pipe(map(response => response.items)); }
-  listAdminPage(filters?: { search?: string; status?: string; page?: number; limit?: number }): Observable<AdminRequestPage> {
+  listAdminPage(filters?: { search?: string; status?: string; page?: number; limit?: number; dateFrom?: string; dateTo?: string }): Observable<AdminRequestPage> {
     let params = new HttpParams();
     if (filters?.search) params = params.set('search', filters.search);
     if (filters?.status) params = params.set('status', filters.status);
     if (filters?.page) params = params.set('page', filters.page);
     if (filters?.limit) params = params.set('limit', filters.limit);
+    if (filters?.dateFrom) params = params.set('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) params = params.set('dateTo', filters.dateTo);
     return this.http.get<ApiResponse<AdminRequestPage>>(`${API_URL}/admin/requests`, { params }).pipe(map(response => response.data));
   }
 }
@@ -68,8 +72,10 @@ export class ProfileService {
 export class AdminService {
   private readonly http = inject(HttpClient);
   dashboard(): Observable<AdminDashboard> { return this.http.get<ApiResponse<AdminDashboard>>(`${API_URL}/admin/dashboard`).pipe(map(response => response.data)); }
+  health(): Observable<HealthStatus> { return this.http.get<ApiResponse<HealthStatus>>(`${API_URL}/health`).pipe(map(response => response.data)); }
   search(query: string): Observable<AdminSearchResult[]> { return this.http.get<ApiResponse<AdminSearchResult[]>>(`${API_URL}/admin/search`, { params: { q: query } }).pipe(map(response => response.data)); }
   users(): Observable<User[]> { return this.http.get<ApiResponse<User[]>>(`${API_URL}/admin/users`).pipe(map(response => response.data)); }
+  updateUser(id: string, user: Pick<User, 'fullName' | 'phoneNumber' | 'department' | 'role'>): Observable<User> { return this.http.patch<ApiResponse<User>>(`${API_URL}/admin/users/${id}`, user).pipe(map(response => response.data)); }
   inventory(): Observable<Asset[]> { return this.http.get<ApiResponse<Asset[]>>(`${API_URL}/admin/inventory`).pipe(map(response => response.data)); }
   auditLog(): Observable<AuditLog[]> { return this.http.get<ApiResponse<AuditLog[]>>(`${API_URL}/admin/audit`).pipe(map(response => response.data)); }
 }

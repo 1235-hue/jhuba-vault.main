@@ -7,6 +7,7 @@ import { AssetRequest, RequestStatus } from '../core/models';
 @Component({
   selector: 'jhub-request-history-page',
   standalone: true,
+  styleUrls: ['./innovator-theme.component.css'],
   imports: [DatePipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

@@ -8,6 +8,7 @@ import { AssetRequest, RequestStatus } from '../core/models';
 @Component({
   selector: 'jhub-innovator-dashboard-page',
   standalone: true,
+  styleUrls: ['./innovator-theme.component.css'],
   imports: [DatePipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

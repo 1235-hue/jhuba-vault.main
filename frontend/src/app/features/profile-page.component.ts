@@ -19,6 +19,7 @@ import { Role } from '../core/models';
 @Component({
   selector: 'jhub-profile-page',
   standalone: true,
+  styleUrls: ['./innovator-theme.component.css'],
   imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -143,15 +144,21 @@ import { Role } from '../core/models';
             <label>
               Phone number
 
-              <input
-                formControlName="phoneNumber"
-                placeholder="07XXXXXXXX"
-                inputmode="numeric"
-              >
+              <div class="phone-input">
+                <span class="country-code">+254</span>
+                <input
+                  type="tel"
+                  formControlName="phoneNumber"
+                  placeholder="712345678"
+                  maxlength="9"
+                  inputmode="numeric"
+                  autocomplete="tel-national"
+                >
+              </div>
 
               @if (invalid('phoneNumber')) {
                 <small>
-                  Enter a valid Kenyan phone number, e.g. 0712345678.
+                  Enter a valid Kenyan phone number (e.g. 712345678). Do not include the leading 0.
                 </small>
               }
             </label>
@@ -405,6 +412,28 @@ import { Role } from '../core/models';
       border-color: #3ea945;
     }
 
+    .phone-input {
+      display: flex;
+      align-items: stretch;
+      margin-top: 7px;
+    }
+
+    .phone-input .country-code {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      border: 1px solid #dce0e8;
+      border-right: 0;
+      background: #f7f8fb;
+      color: #586174;
+    }
+
+    .phone-input input {
+      flex: 1;
+      min-width: 0;
+      margin-top: 0;
+    }
+
     .profile-form small {
       display: block;
       color: #e6292a;
@@ -498,22 +527,11 @@ export class ProfilePageComponent {
       ]
     ],
 
-    /*
-     * USER ENTERS:
-     *
-     * 0712345678
-     *
-     * We convert it to:
-     *
-     * +254712345678
-     *
-     * before sending it to the backend.
-     */
     phoneNumber: [
       '',
       [
         Validators.required,
-        Validators.pattern(/^07\d{8}$/)
+        Validators.pattern(/^[17]\d{8}$/)
       ]
     ],
 
@@ -1121,10 +1139,6 @@ export class ProfilePageComponent {
     return `${base}.${extension}`;
   }
 
-  /**
-   * Convert stored +254 number into
-   * the user-friendly 07XXXXXXXX format.
-   */
   private displayPhoneNumber(
     phone: string
   ): string {
@@ -1134,39 +1148,23 @@ export class ProfilePageComponent {
     }
 
     if (phone.startsWith('+254')) {
-      return `0${phone.substring(4)}`;
+      return phone.substring(4);
     }
 
     if (phone.startsWith('254')) {
-      return `0${phone.substring(3)}`;
+      return phone.substring(3);
+    }
+
+    if (phone.startsWith('0')) {
+      return phone.substring(1);
     }
 
     return phone;
   }
 
-  /**
-   * Convert 07XXXXXXXX into +254XXXXXXXXX
-   * before sending to backend.
-   */
   private normalisePhoneNumber(
     phone: string
   ): string {
-
-    const cleaned =
-      phone.replace(/\D/g, '');
-
-    if (cleaned.startsWith('07')) {
-      return `+254${cleaned.substring(1)}`;
-    }
-
-    if (cleaned.startsWith('254')) {
-      return `+${cleaned}`;
-    }
-
-    if (cleaned.startsWith('7')) {
-      return `+254${cleaned}`;
-    }
-
-    return phone;
+    return `+254${phone}`;
   }
 }
