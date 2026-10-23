@@ -136,4 +136,35 @@ npm run seed
 
 ---
 
+## Official Asset Register Import (Windows)
+
+The register importer reads the workbook, performs a read-only dry run, and
+holds incomplete rows and possible matches for review. It uses deterministic
+row-based asset tags and preserves source values, including quantity units, in
+the asset specifications. It never changes existing quantities or images.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\backend\scripts\prepare-asset-register.ps1" -WorkbookPath "C:\path\to\Copy of Office Inventory Data.xlsx"
+```
+
+The import includes a new `SOFTWARE` asset category. On an approved
+development/staging database, apply the additive migration first, then set the
+two safety variables and rerun with `-Apply`:
+
+```powershell
+Set-Location .\backend
+$env:ASSET_REGISTER_DATABASE_URL = "<development/staging database URL>"
+$env:DATABASE_URL = $env:ASSET_REGISTER_DATABASE_URL
+npm.cmd exec -- prisma migrate deploy
+$env:ASSET_REGISTER_TARGET = "development"
+$env:ASSET_REGISTER_CONFIRM = "IMPORT_TO_NON_PRODUCTION"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\prepare-asset-register.ps1" -WorkbookPath "C:\path\to\Copy of Office Inventory Data.xlsx" -Apply
+```
+
+Do not set the write-confirmation variables for production. Resolve every
+manual-review row against the source register and existing inventory before
+trying to import those rows.
+
+---
+
 ## Environment 

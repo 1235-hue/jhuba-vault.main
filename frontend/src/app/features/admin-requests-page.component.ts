@@ -134,6 +134,17 @@ const PAGE_SIZES = [8, 16, 32] as const;
                         <button class="action-button return-button" type="button" [disabled]="busyId() === request.id" (click)="returnRequest(request)"><i class="pi pi-replay"></i><span>Mark Returned</span></button>
                       }
                     </div>
+                    <div class="more-cell">
+                      <button class="more-button" type="button" [attr.aria-label]="'More actions for request ' + request.id" [attr.aria-expanded]="openActionId() === request.id" [attr.aria-controls]="'request-actions-' + request.id" (click)="toggleActions(request.id)" (keydown.escape)="openActionId.set(null)">
+                        <i class="pi pi-ellipsis-v" aria-hidden="true"></i>
+                      </button>
+                      @if (openActionId() === request.id) {
+                        <div class="action-menu" [id]="'request-actions-' + request.id" role="menu">
+                          <a [routerLink]="['/app/requests', request.id]" role="menuitem" (click)="openActionId.set(null)">View request details</a>
+                          <button type="button" role="menuitem" (click)="toggleActions(request.id)">Close menu</button>
+                        </div>
+                      }
+                    </div>
                   </article>
                 }
               }
@@ -307,8 +318,8 @@ const PAGE_SIZES = [8, 16, 32] as const;
     .more-button i { font-size:13px; }
     .more-button:disabled { cursor:not-allowed; opacity:.45; }
     .action-menu { position:absolute; z-index:5; top:30px; right:0; width:160px; display:grid; padding:5px; border:1px solid #e1e7ef; border-radius:5px; background:#fff; box-shadow:0 5px 16px #1b2a3d20; }
-    .action-menu button,.action-menu span { padding:8px; border:0; background:#fff; color:#34465c; text-align:left; font-size:11px; }
-    .action-menu button:hover { background:#f4f7fb; }
+    .action-menu a,.action-menu button { padding:8px; border:0; background:#fff; color:#34465c; text-align:left; text-decoration:none; font-size:11px; }
+    .action-menu a:hover,.action-menu button:hover { background:#f4f7fb; }
     .action-menu button:disabled { color:#99a5b5; }
     .table-state { min-height:180px; display:flex; justify-content:center; align-items:center; gap:10px; padding:24px; color:#667083; font-size:14px; }
     .table-state.error { color:#b4232c; }
@@ -387,6 +398,7 @@ export class AdminRequestsPageComponent {
   protected readonly totalPages = signal(1);
   protected readonly selectedIds = signal<Set<string>>(new Set());
   protected readonly busyId = signal<string | null>(null);
+  protected readonly openActionId = signal<string | null>(null);
   protected readonly filterMenuOpen = signal(false);
   protected readonly message = signal('');
   protected readonly messageType = signal<'success' | 'error'>('success');

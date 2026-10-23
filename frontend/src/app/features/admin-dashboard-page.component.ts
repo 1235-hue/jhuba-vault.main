@@ -14,9 +14,10 @@ const categoryLabels: Record<AssetCategory, string> = {
   [AssetCategory.IOT_PROTOTYPING]: 'IoT & prototyping',
   [AssetCategory.AV_PRESENTATION]: 'AV & presentation',
   [AssetCategory.OFFICE_SUPPLIES]: 'Office supplies',
-  [AssetCategory.FURNITURE]: 'Furniture'
+  [AssetCategory.FURNITURE]: 'Furniture',
+  [AssetCategory.SOFTWARE]: 'Software'
 };
-const categoryColors = ['#262571', '#3ea945', '#2a4695', '#e6a52d', '#dd5361', '#8d6ac4'];
+const categoryColors = ['#262571', '#3ea945', '#2a4695', '#e6a52d', '#dd5361', '#8d6ac4', '#3ea945'];
 const requestStatuses = [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED] as const;
 const statusLabels: Record<RequestStatus, string> = {
   [RequestStatus.PENDING]: 'Pending',

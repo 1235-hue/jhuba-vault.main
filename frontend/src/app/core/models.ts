@@ -1,5 +1,5 @@
 export enum Role { INNOVATOR = 'INNOVATOR', ADMIN = 'ADMIN' }
-export enum AssetCategory { COMPUTING_PERIPHERALS = 'COMPUTING_PERIPHERALS', NETWORKING_INFRASTRUCTURE = 'NETWORKING_INFRASTRUCTURE', IOT_PROTOTYPING = 'IOT_PROTOTYPING', AV_PRESENTATION = 'AV_PRESENTATION', OFFICE_SUPPLIES = 'OFFICE_SUPPLIES', FURNITURE = 'FURNITURE' }
+export enum AssetCategory { COMPUTING_PERIPHERALS = 'COMPUTING_PERIPHERALS', NETWORKING_INFRASTRUCTURE = 'NETWORKING_INFRASTRUCTURE', IOT_PROTOTYPING = 'IOT_PROTOTYPING', AV_PRESENTATION = 'AV_PRESENTATION', OFFICE_SUPPLIES = 'OFFICE_SUPPLIES', FURNITURE = 'FURNITURE', SOFTWARE = 'SOFTWARE' }
 export enum RequestStatus { PENDING = 'PENDING', APPROVED = 'APPROVED', REJECTED = 'REJECTED', CHECKED_OUT = 'CHECKED_OUT', RETURNED = 'RETURNED', OVERDUE = 'OVERDUE' }
 export interface User { id: string; fullName: string; email: string; phoneNumber: string; identificationId: string; department: string; bio?: string; githubUrl?: string; avatarUrl?: string; role: Role; createdAt: string; updatedAt: string; }
 export interface Asset { id: string; assetTag: string; name: string; category: AssetCategory; description: string; price: number | string; totalQuantity: number; availableQty: number; imageUrl?: string | null; imagePublicId?: string | null; specifications: Record<string, string>; createdAt: string; updatedAt: string; }

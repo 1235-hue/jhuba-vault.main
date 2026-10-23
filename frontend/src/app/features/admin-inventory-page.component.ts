@@ -210,7 +210,8 @@ export class AdminInventoryPageComponent {
     { label: 'IoT & Sensors', value: AssetCategory.IOT_PROTOTYPING, icon: 'pi pi-microchip', tone: 'violet' },
     { label: 'AV Equipment', value: AssetCategory.AV_PRESENTATION, icon: 'pi pi-video', tone: 'amber' },
     { label: 'Tools', value: AssetCategory.OFFICE_SUPPLIES, icon: 'pi pi-cog', tone: 'teal' },
-    { label: 'Other', value: AssetCategory.FURNITURE, icon: 'pi pi-ellipsis-h', tone: 'gray' }
+    { label: 'Other', value: AssetCategory.FURNITURE, icon: 'pi pi-ellipsis-h', tone: 'gray' },
+    { label: 'Software', value: AssetCategory.SOFTWARE, icon: 'pi pi-desktop', tone: 'blue' }
   ];
   protected form: AssetDraft = this.emptyDraft();
   protected readonly filteredAssets = computed(() => {
