@@ -1,0 +1,66 @@
+<jhub-page-header title="Audit log" subtitle="A record of changes to assets, requests and users, and who made them." />
+
+@if (loading()) {
+  <div class="loading-state card" role="status"><span class="spinner"></span> Loading audit log…</div>
+} @else if (error()) {
+  <div class="card"><jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load the audit log" [text]="error()!"><button type="button" class="btn btn-secondary" (click)="load()">Try again</button></jhub-empty></div>
+} @else {
+  <div class="stack" style="--gap: 20px">
+    <section class="stat-grid" aria-label="Summary">
+      <div class="stat"><div class="stat-top">Events recorded <span class="stat-icon"><i class="pi pi-history" aria-hidden="true"></i></span></div><div class="stat-value">{{ logs().length }}</div></div>
+      <div class="stat"><div class="stat-top">By people <span class="stat-icon is-blue"><i class="pi pi-user" aria-hidden="true"></i></span></div><div class="stat-value">{{ userActions() }}</div></div>
+      <div class="stat"><div class="stat-top">By the system <span class="stat-icon is-violet"><i class="pi pi-cog" aria-hidden="true"></i></span></div><div class="stat-value">{{ systemActions() }}</div></div>
+    </section>
+
+    <section class="card">
+      <div class="toolbar bar">
+        <div class="input-icon grow"><i class="pi pi-search" aria-hidden="true"></i><input class="input" type="search" aria-label="Search audit log" placeholder="Search by action, person or record" [ngModel]="search()" (ngModelChange)="update(search, $event)" /></div>
+        <select class="select type-select" aria-label="Filter by record type" [ngModel]="entity()" (ngModelChange)="update(entity, $event)"><option value="ALL">All record types</option>@for (type of entities(); track type) { <option [value]="type">{{ label(type) }}</option> }</select>
+        <input class="input date" type="date" aria-label="From date" [ngModel]="dateFrom()" (ngModelChange)="update(dateFrom, $event)" [max]="dateTo() || null" />
+        <input class="input date" type="date" aria-label="To date" [ngModel]="dateTo()" (ngModelChange)="update(dateTo, $event)" [min]="dateFrom() || null" />
+        @if (hasFilters()) { <button type="button" class="btn btn-ghost" (click)="clear()">Reset</button> }
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>When</th><th>Action</th><th>Record</th><th>Performed by</th><th class="actions"><span class="sr-only">Details</span></th></tr></thead>
+          <tbody>
+            @for (log of rows(); track log.id) {
+              <tr>
+                <td class="nowrap">{{ log.createdAt | date: 'd MMM y' }}<span class="cell-sub">{{ log.createdAt | date: 'h:mm a' }}</span></td>
+                <td><span class="cell-title">{{ label(log.action) }}</span></td>
+                <td>{{ label(log.entityType) }}<span class="cell-sub">{{ log.entityId }}</span></td>
+                <td>@if (log.actor) { <span class="cell-title">{{ log.actor.fullName }}</span><span class="cell-sub">{{ log.actor.email }}</span> } @else { <span class="muted">System</span> }</td>
+                <td class="actions"><button type="button" class="btn btn-sm btn-secondary" (click)="selected.set(log)">Details</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5"><jhub-empty icon="pi-history" [title]="logs().length ? 'No events match your filters' : 'No activity yet'" [text]="logs().length ? 'Try a different search or date range.' : 'Changes are recorded here as they happen.'">@if (hasFilters()) { <button type="button" class="btn btn-secondary" (click)="clear()">Reset filters</button> }</jhub-empty></td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pager">
+        <span>Showing <strong>{{ start() }}–{{ end() }}</strong> of <strong>{{ filtered().length }}</strong> events</span>
+        <div class="pager-controls">
+          <label>Rows <select class="select" aria-label="Events per page" [ngModel]="pageSize()" (ngModelChange)="setPageSize($event)"><option [ngValue]="10">10</option><option [ngValue]="25">25</option><option [ngValue]="50">50</option></select></label>
+          <button type="button" class="pager-btn" aria-label="Previous page" [disabled]="page() <= 1" (click)="goTo(page() - 1)"><i class="pi pi-angle-left" aria-hidden="true"></i></button>
+          <span class="page-of">{{ page() }} / {{ pageCount() }}</span>
+          <button type="button" class="pager-btn" aria-label="Next page" [disabled]="page() >= pageCount()" (click)="goTo(page() + 1)"><i class="pi pi-angle-right" aria-hidden="true"></i></button>
+        </div>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (selected(); as log) {
+  <jhub-modal [title]="label(log.action)" [subtitle]="(log.createdAt | date: 'd MMM y, h:mm a') ?? ''" (closed)="selected.set(null)">
+    <dl class="facts">
+      <div><dt>Record type</dt><dd>{{ label(log.entityType) }}</dd></div>
+      <div><dt>Record ID</dt><dd>{{ log.entityId }}</dd></div>
+      <div><dt>Performed by</dt><dd>{{ log.actor?.fullName || 'System' }}</dd></div>
+    </dl>
+    @if (metadata(log)) { <h3 class="meta-title">Details</h3><pre class="meta">{{ metadata(log) }}</pre> }
+    <footer class="modal-foot" modal-footer><button type="button" class="btn btn-secondary" (click)="selected.set(null)">Close</button></footer>
+  </jhub-modal>
+}

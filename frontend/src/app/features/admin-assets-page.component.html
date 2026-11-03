@@ -1,0 +1,158 @@
+<jhub-page-header title="Assets" subtitle="Manage the catalogue: asset records, photos and availability.">
+  <button type="button" class="btn btn-secondary" (click)="openImport()"><i class="pi pi-upload" aria-hidden="true"></i> Import assets</button>
+  <button type="button" class="btn btn-primary" (click)="openCreate()"><i class="pi pi-plus" aria-hidden="true"></i> Add asset</button>
+</jhub-page-header>
+
+<div class="toolbar bar">
+  <div class="input-icon grow">
+    <i class="pi pi-search" aria-hidden="true"></i>
+    <input class="input" type="search" aria-label="Search assets" placeholder="Search by name or tag" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+  </div>
+  <span class="muted">{{ visible().length }} {{ visible().length === 1 ? 'asset' : 'assets' }}</span>
+</div>
+
+@if (loading()) {
+  <div class="grid" aria-busy="true">@for (n of [1, 2, 3, 4]; track n) { <span class="skeleton" style="height: 340px; border-radius: var(--r-lg)"></span> }</div>
+} @else if (loadError()) {
+  <div class="card"><jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load assets" text="Check your connection and try again."><button type="button" class="btn btn-secondary" (click)="load()">Try again</button></jhub-empty></div>
+} @else if (!visible().length) {
+  <div class="card">
+    <jhub-empty icon="pi-tags" [title]="assets().length ? 'No assets match your search' : 'No assets yet'" [text]="assets().length ? 'Try a different name or tag.' : 'Add your first asset to start building the catalogue.'">
+      @if (!assets().length) { <button type="button" class="btn btn-primary" (click)="openCreate()">Add asset</button> }
+    </jhub-empty>
+  </div>
+} @else {
+  <div class="grid">
+    @for (asset of visible(); track asset.id) {
+      <article class="card asset">
+        <div class="media">
+          <jhub-asset-image [url]="asset.imageUrl" [alt]="asset.name" />
+          @if (uploadingId() === asset.id) { <div class="uploading" role="status"><span class="spinner"></span>{{ progress() ? progress() + '%' : 'Working…' }}</div> }
+        </div>
+        <div class="body">
+          <div class="row-between">
+            <span class="tag">{{ asset.assetTag }}</span>
+            <span class="badge badge-plain badge-neutral">{{ categoryShort(asset.category) }}</span>
+          </div>
+          <h2 class="name">{{ asset.name }}</h2>
+          <div class="stock">
+            <span class="stock-text" [class.is-out]="asset.availableQty === 0"><strong>{{ asset.availableQty }}</strong> of {{ asset.totalQuantity }} available</span>
+          </div>
+        </div>
+        <footer class="foot">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="edit(asset)"><i class="pi pi-pencil" aria-hidden="true"></i> Edit</button>
+          <label class="btn btn-secondary btn-sm file" [attr.aria-disabled]="uploadingId() !== null">
+            <i class="pi pi-image" aria-hidden="true"></i> {{ asset.imageUrl ? 'Replace photo' : 'Add photo' }}
+            <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingId() !== null" (change)="upload(asset, $event)" />
+          </label>
+          <button type="button" class="btn btn-ghost btn-sm" [disabled]="busyId() === asset.id" (click)="toggleAvailability(asset)">{{ asset.availableQty ? 'Mark unavailable' : 'Mark available' }}</button>
+          @if (asset.imageUrl) { <button type="button" class="btn btn-ghost btn-sm" [disabled]="uploadingId() !== null" (click)="removeImage(asset)">Remove photo</button> }
+          <button type="button" class="btn btn-ghost btn-sm danger" (click)="deleteAsset(asset)"><i class="pi pi-trash" aria-hidden="true"></i> Delete</button>
+        </footer>
+      </article>
+    }
+  </div>
+  <p class="hint help">Photos can be JPG, PNG or WebP, up to 5 MB.</p>
+}
+
+@if (importOpen()) {
+  <jhub-modal title="Import assets" subtitle="Preview and resolve spreadsheet rows before adding them to the catalogue." size="lg" [busy]="importBusy()" (closed)="closeImport()">
+    <div class="import-content">
+      <div class="import-file-row">
+        <label class="btn btn-secondary file">
+          <i class="pi pi-file-excel" aria-hidden="true"></i> Choose .xlsx or .csv
+          <input class="sr-only" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="selectImportFile($event)" />
+        </label>
+        @if (importFile()) { <span class="muted">{{ importFile()!.name }}</span> }
+        @if (importFile() && !importPreview()) {
+          <button type="button" class="btn btn-primary" [disabled]="importBusy()" (click)="previewImport()"><i class="pi pi-search" aria-hidden="true"></i> Preview spreadsheet</button>
+        }
+      </div>
+      @if (importBusy()) {
+        <div class="import-progress" role="status" aria-live="polite">
+          <span>{{ importProgress() ? 'Uploading ' + importProgress() + '%' : 'Preparing import…' }}</span>
+          <progress [value]="importProgress()" max="100" aria-label="Spreadsheet upload progress"></progress>
+        </div>
+      }
+      @if (importError()) { <div class="alert alert-danger" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ importError() }}</div></div> }
+
+      @if (importResult(); as result) {
+        <div class="alert alert-success" role="status">
+          <i class="pi pi-check-circle" aria-hidden="true"></i>
+          <div class="alert-body"><strong>Import finished.</strong> {{ result.imported }} imported, {{ result.skipped }} skipped, {{ result.failed }} failed.@if (result.alreadyImported) { {{ ' ' + result.alreadyImported + ' were already imported.' }} }</div>
+        </div>
+        @if (result.failedRows.length) {
+          <ul class="import-errors">@for (failure of result.failedRows; track $index) { <li>Row {{ failure.rowNumber ?? 'unknown' }}: {{ failure.errors.join(' ') }}</li> }</ul>
+        }
+      }
+
+      @if (importPreview(); as preview) {
+        <section class="import-summary" aria-label="Import validation summary">
+          <div><strong>{{ preview.totalPopulatedRows }}</strong><span>Populated rows</span></div>
+          <div><strong>{{ importReadyRows().length }}</strong><span>Ready to import</span></div>
+          <div><strong>{{ importCorrectionCount() }}</strong><span>Need correction</span></div>
+          <div><strong>{{ preview.duplicatesOrPotentialDuplicates }}</strong><span>Possible duplicates</span></div>
+          <div><strong>{{ preview.missingQuantities }}</strong><span>Missing quantities</span></div>
+          <div><strong>{{ preview.missingDescriptions }}</strong><span>Missing descriptions</span></div>
+        </section>
+        <p class="muted import-sheet">{{ preview.fileName }} · {{ preview.sheetName }}</p>
+
+        <details class="import-mappings">
+          <summary>Category mapping results</summary>
+          <ul>@for (mapping of preview.categoryMappings | keyvalue; track mapping.key) { <li>{{ mapping.key }} <span>({{ mapping.value }})</span></li> }</ul>
+        </details>
+
+        <div class="import-table-wrap" role="region" aria-label="Editable spreadsheet rows" tabindex="0">
+          <table class="import-table">
+            <thead><tr><th scope="col">Include</th><th scope="col">Row</th><th scope="col">Asset name</th><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Quantity</th><th scope="col">Proposed tag</th><th scope="col">Review</th></tr></thead>
+            <tbody>
+              @for (row of preview.rows; track row.rowNumber) {
+                <tr [class.is-excluded]="row.excluded">
+                  <td><input type="checkbox" [name]="'include-' + row.rowNumber" [checked]="!row.excluded" (change)="row.excluded = !$any($event.target).checked" [attr.aria-label]="'Include spreadsheet row ' + row.rowNumber" /></td>
+                  <td>{{ row.rowNumber }}</td>
+                  <td><input class="input import-input" [name]="'item-' + row.rowNumber" [(ngModel)]="row.item" [disabled]="row.excluded" [attr.aria-label]="'Asset name, row ' + row.rowNumber" /></td>
+                  <td><textarea class="textarea import-input" [name]="'description-' + row.rowNumber" rows="2" [(ngModel)]="row.description" [disabled]="row.excluded" [attr.aria-label]="'Description, row ' + row.rowNumber"></textarea></td>
+                  <td><select class="select import-input" [name]="'category-' + row.rowNumber" [(ngModel)]="row.category" [disabled]="row.excluded" [attr.aria-label]="'Category, row ' + row.rowNumber"><option [ngValue]="null">Unmapped</option>@for (category of categories; track category) { <option [ngValue]="category">{{ meta[category].label }}</option> }</select></td>
+                  <td><input class="input import-quantity" [name]="'quantity-' + row.rowNumber" type="number" min="1" step="1" [(ngModel)]="row.quantity" [disabled]="row.excluded" [attr.aria-label]="'Quantity, row ' + row.rowNumber" /></td>
+                  <td><code>{{ row.assetTag }}</code></td>
+                  <td class="import-review">
+                    @for (issue of rowErrors(row); track issue) { <span class="import-issue">{{ issue }}</span> }
+                    @for (warning of row.warnings; track warning) { <span class="import-warning">{{ warning }}</span> }
+                    @if (row.warnings.length) { <label class="review-approval"><input type="checkbox" [name]="'approve-warning-' + row.rowNumber" [(ngModel)]="row.warningsApproved" [disabled]="row.excluded" /> Acknowledge warning</label> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <label class="price-approval"><input type="checkbox" [ngModel]="approveZeroPrice()" (ngModelChange)="approveZeroPrice.set($event)" name="approveZeroPrice" /> I approve importing selected assets with unit price KSh 0. I can update prices later.</label>
+      }
+    </div>
+    <footer class="modal-foot" modal-footer>
+      <button type="button" class="btn btn-secondary" [disabled]="importBusy()" (click)="closeImport()">{{ importResult() ? 'Done' : 'Cancel' }}</button>
+      @if (importPreview() && !importResult()) {
+        <button type="button" class="btn btn-primary" [disabled]="importBusy() || !importReadyRows().length || importWarningCount() > 0 || !approveZeroPrice()" (click)="confirmImport()"><i class="pi pi-check" aria-hidden="true"></i> Import {{ importReadyRows().length }} assets</button>
+      }
+    </footer>
+  </jhub-modal>
+}
+
+@if (dialogOpen()) {
+  <jhub-modal [title]="editingId() ? 'Edit asset' : 'Add asset'" size="lg" [busy]="saving()" (closed)="closeDialog()">
+    <form id="asset-form" class="form-grid" (ngSubmit)="saveAsset()">
+      <div class="field"><label for="a-tag">Asset tag</label><input id="a-tag" class="input" name="assetTag" [(ngModel)]="form.assetTag" required maxlength="64" placeholder="e.g. JHUB-IOT-014" /></div>
+      <div class="field"><label for="a-name">Name</label><input id="a-name" class="input" name="name" [(ngModel)]="form.name" required maxlength="120" /></div>
+      <div class="field"><label for="a-cat">Category</label><select id="a-cat" class="select" name="category" [(ngModel)]="form.category" required>@for (category of categories; track category) { <option [ngValue]="category">{{ meta[category].label }}</option> }</select></div>
+      <div class="field"><label for="a-price">Unit price (KSh)</label><input id="a-price" class="input" name="price" type="number" min="0" step="0.01" [(ngModel)]="form.price" required /></div>
+      <div class="field"><label for="a-total">Total quantity</label><input id="a-total" class="input" name="totalQuantity" type="number" min="1" step="1" [(ngModel)]="form.totalQuantity" required /></div>
+      <div class="field"><label for="a-avail">Available quantity</label><input id="a-avail" class="input" name="availableQty" type="number" min="0" [max]="form.totalQuantity" step="1" [(ngModel)]="form.availableQty" required /></div>
+      <div class="field full"><label for="a-desc">Description</label><textarea id="a-desc" class="textarea" name="description" rows="3" [(ngModel)]="form.description" required maxlength="500"></textarea></div>
+      @if (formError()) { <div class="alert alert-danger full" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ formError() }}</div></div> }
+    </form>
+    <footer class="modal-foot" modal-footer>
+      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="closeDialog()">Cancel</button>
+      <button type="submit" form="asset-form" class="btn btn-primary" [class.is-loading]="saving()" [disabled]="saving()">{{ editingId() ? 'Save changes' : 'Add asset' }}</button>
+    </footer>
+  </jhub-modal>
+}

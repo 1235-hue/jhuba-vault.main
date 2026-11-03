@@ -1,0 +1,7 @@
+.stat-grid { margin-bottom: 20px; }
+.overdue-alert { margin-bottom: 20px; align-items: center; }
+.overdue-alert > .pi { margin-top: 0; }
+.loan-list > li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
+.loan-list > li:last-child { border-bottom: 0; }
+.loan-list .due { display: grid; justify-items: end; gap: 4px; }
+.loan-list .is-overdue .cell-sub { color: var(--red-700); }

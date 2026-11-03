@@ -1,0 +1,115 @@
+@if (loading()) {
+  <div class="loading-state" role="status"><span class="spinner"></span> Loading request…</div>
+} @else if (failed() || !request()) {
+  <div class="card">
+    <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load this request" text="It may not exist, or you may not have access to it.">
+      <a class="btn btn-secondary" [routerLink]="backLink()">Back to requests</a>
+    </jhub-empty>
+  </div>
+} @else if (request(); as current) {
+  <jhub-page-header
+    [title]="current.projectName"
+    [crumbs]="[{ label: auth.isAdmin() ? 'Requests' : 'My requests', link: backLink() }, { label: requestRef(current.id) }]"
+  >
+    <jhub-status [status]="current.status" />
+  </jhub-page-header>
+
+  @if (banner(current.status); as info) {
+    <div class="alert banner" [class]="'alert banner alert-' + info.tone" role="status">
+      <i class="pi" [class]="'pi ' + info.icon" aria-hidden="true"></i>
+      <div class="alert-body">
+        <span class="alert-title">{{ info.title }}</span>
+        {{ info.text }}
+        @if (current.rejectionReason) { <p class="reason"><strong>Reason:</strong> {{ current.rejectionReason }}</p> }
+      </div>
+    </div>
+  }
+
+  <div class="split">
+    <div class="stack">
+      <section class="card">
+        <div class="card-head"><h2 class="card-title">Project</h2><span class="muted">Submitted {{ current.createdAt | date: 'd MMM y' }}</span></div>
+        <div class="card-body stack" style="--gap: 20px">
+          <p class="abstract">{{ current.projectAbstract }}</p>
+          <dl class="facts">
+            <div><dt>Start date</dt><dd>{{ current.startDate | date: 'd MMM y' }}</dd></div>
+            <div><dt>Loan period</dt><dd>{{ current.loanDays }} {{ current.loanDays === 1 ? 'day' : 'days' }}</dd></div>
+            <div><dt>Expected return</dt><dd>{{ current.expectedReturn ? (current.expectedReturn | date: 'd MMM y') : '—' }}</dd></div>
+            @if (current.actualReturn) { <div><dt>Returned on</dt><dd>{{ current.actualReturn | date: 'd MMM y' }}</dd></div> }
+          </dl>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 class="card-title">Requested equipment</h2><span class="count">{{ current.requestItems.length }}</span></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Asset</th><th>Tag</th><th class="num">Quantity</th></tr></thead>
+            <tbody>
+              @for (item of current.requestItems; track item.id || item.assetId) {
+                <tr>
+                  <td><span class="cell-title">{{ item.asset.name }}</span></td>
+                  <td><span class="tag">{{ item.asset.assetTag }}</span></td>
+                  <td class="num"><strong>{{ item.quantity }}</strong></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 class="card-title">Team</h2><span class="count">{{ current.teamMembers.length }}</span></div>
+        @if (!current.teamMembers.length) {
+          <p class="card-body muted">No team members were added to this request.</p>
+        } @else {
+          <ul>
+            @for (member of current.teamMembers; track member.id || member.email) {
+              <li class="member">
+                <span class="avatar">{{ initials(member.fullName) }}</span>
+                <div>
+                  <span class="cell-title">{{ member.fullName }}</span>
+                  <span class="cell-sub">{{ member.roleInProject }} · {{ member.studentOrIdNo }}</span>
+                </div>
+                <a class="link member-mail" [href]="'mailto:' + member.email">{{ member.email }}</a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card">
+        <div class="card-head"><h2 class="card-title">Progress</h2></div>
+        <div class="card-body">
+          <ol class="timeline">
+            @for (step of steps(); track step.label) {
+              <li [class.is-done]="step.state === 'done'" [class.is-current]="step.state === 'current'" [class.is-bad]="step.state === 'bad'">
+                <strong>{{ step.label }}</strong>
+                <small>{{ step.detail }}</small>
+              </li>
+            }
+          </ol>
+        </div>
+      </section>
+
+      @if (auth.isAdmin() && current.innovator; as owner) {
+        <section class="card">
+          <div class="card-head"><h2 class="card-title">Requested by</h2></div>
+          <div class="card-body stack" style="--gap: 14px">
+            <div class="person">
+              <span class="avatar avatar-lg">{{ initials(owner.fullName) }}</span>
+              <div><span class="cell-title">{{ owner.fullName }}</span><span class="cell-sub">{{ owner.department || 'No department listed' }}</span></div>
+            </div>
+            <dl class="facts one">
+              <div><dt>Email</dt><dd>{{ owner.email }}</dd></div>
+              <div><dt>Phone</dt><dd>{{ owner.phoneNumber || '—' }}</dd></div>
+              <div><dt>ID number</dt><dd>{{ owner.identificationId || '—' }}</dd></div>
+            </dl>
+          </div>
+        </section>
+      }
+    </div>
+  </div>
+}

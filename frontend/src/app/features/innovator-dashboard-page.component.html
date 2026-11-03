@@ -1,0 +1,108 @@
+<jhub-page-header [title]="'Welcome back' + (auth.user() ? ', ' + firstName(auth.user()!.fullName) : '')" subtitle="Here is where your requests and loans stand today.">
+  <a class="btn btn-secondary" routerLink="/catalogue">Browse catalogue</a>
+  <a class="btn btn-primary" routerLink="/catalogue"><i class="pi pi-plus" aria-hidden="true"></i> New request</a>
+</jhub-page-header>
+
+@if (loading()) {
+  <div class="stat-grid" aria-busy="true">
+    @for (n of [1, 2, 3, 4, 5]; track n) { <span class="skeleton" style="height: 112px; border-radius: var(--r-lg)"></span> }
+  </div>
+} @else if (error()) {
+  <div class="card">
+    <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load your workspace" [text]="error()!">
+      <button type="button" class="btn btn-secondary" (click)="loadRequests()">Try again</button>
+    </jhub-empty>
+  </div>
+} @else {
+  @if (overdueLoanCount() > 0) {
+    <div class="alert alert-danger overdue-alert" role="alert">
+      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+      <div class="alert-body">
+        <span class="alert-title">{{ overdueLoanCount() }} {{ overdueLoanCount() === 1 ? 'loan is' : 'loans are' }} overdue</span>
+        Return the equipment to the Vault as soon as you can so other innovators can use it.
+      </div>
+      <a class="alert-action btn btn-danger-soft btn-sm" routerLink="/app/loans">View loans</a>
+    </div>
+  }
+
+  <section class="stat-grid" aria-label="Summary">
+    <a class="stat" routerLink="/app/requests">
+      <div class="stat-top">Pending review <span class="stat-icon is-amber"><i class="pi pi-clock" aria-hidden="true"></i></span></div>
+      <div class="stat-value">{{ count(RequestStatus.PENDING) }}</div>
+    </a>
+    <a class="stat" routerLink="/app/requests">
+      <div class="stat-top">Approved <span class="stat-icon is-blue"><i class="pi pi-check-circle" aria-hidden="true"></i></span></div>
+      <div class="stat-value">{{ count(RequestStatus.APPROVED) }}</div>
+    </a>
+    <a class="stat" routerLink="/app/loans">
+      <div class="stat-top">Active loans <span class="stat-icon is-violet"><i class="pi pi-box" aria-hidden="true"></i></span></div>
+      <div class="stat-value">{{ activeLoanCount() }}</div>
+    </a>
+    <a class="stat" routerLink="/app/loans">
+      <div class="stat-top">Overdue <span class="stat-icon is-red"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i></span></div>
+      <div class="stat-value">{{ overdueLoanCount() }}</div>
+    </a>
+    <a class="stat" routerLink="/app/requests">
+      <div class="stat-top">Items returned <span class="stat-icon is-green"><i class="pi pi-replay" aria-hidden="true"></i></span></div>
+      <div class="stat-value">{{ returnedItemCount() }}</div>
+    </a>
+  </section>
+
+  <div class="split">
+    <section class="card" aria-labelledby="recent-title">
+      <div class="card-head">
+        <h2 class="card-title" id="recent-title">Recent requests</h2>
+        <a class="link" routerLink="/app/requests">View all</a>
+      </div>
+      @if (!recentRequests().length) {
+        <jhub-empty icon="pi-inbox" title="No requests yet" text="Pick the equipment your project needs and submit your first request.">
+          <a class="btn btn-primary" routerLink="/catalogue">Browse the catalogue</a>
+        </jhub-empty>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Project</th><th>Items</th><th>Submitted</th><th>Status</th></tr></thead>
+            <tbody>
+              @for (request of recentRequests(); track request.id) {
+                <tr>
+                  <td>
+                    <a class="cell-title stretched" [routerLink]="['/app/requests', request.id]">{{ request.projectName }}</a>
+                    <span class="cell-sub">{{ request.id | reqRef }}</span>
+                  </td>
+                  <td><span class="cell-clamp">{{ requestedItems(request) }}</span></td>
+                  <td class="nowrap">{{ request.createdAt | date: 'd MMM y' }}</td>
+                  <td><jhub-status [status]="request.status" /></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="card" aria-labelledby="loans-title">
+      <div class="card-head">
+        <h2 class="card-title" id="loans-title">Equipment on loan</h2>
+        <a class="link" routerLink="/app/loans">View all</a>
+      </div>
+      @if (!loanRows().length) {
+        <jhub-empty icon="pi-box" title="Nothing on loan" text="Approved equipment shows up here once an administrator checks it out to you." />
+      } @else {
+        <ul class="loan-list">
+          @for (loan of loanRows(); track loan.request.id + loan.item.assetId) {
+            <li [class.is-overdue]="isOverdue(loan.request)">
+              <div>
+                <a class="cell-title" [routerLink]="['/app/requests', loan.request.id]">{{ loan.item.asset.name }}</a>
+                <span class="cell-sub">{{ loan.item.asset.assetTag || '—' }} · Qty {{ loan.item.quantity }}</span>
+              </div>
+              <div class="due">
+                @if (isOverdue(loan.request)) { <span class="badge badge-overdue">Overdue</span> }
+                <span class="cell-sub">Due {{ loan.request.expectedReturn | date: 'd MMM y' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}

@@ -1,10 +1,10 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Injector, inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
+import { AuthStore } from '../state/auth.store';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const router = inject(Router);
+  const injector = inject(Injector);
   const token = localStorage.getItem('jhub_access_token');
 
   if (!token) {
@@ -18,8 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   return next(authenticatedRequest).pipe(
     catchError(error => {
       if (error.status === 401 && !request.url.includes('/auth/')) {
-        localStorage.removeItem('jhub_access_token');
-        void router.navigateByUrl('/auth/login');
+        injector.get(AuthStore).expireSession();
       }
       return throwError(() => error);
     })

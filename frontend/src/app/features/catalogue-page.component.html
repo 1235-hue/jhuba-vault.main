@@ -1,0 +1,127 @@
+<div class="container catalogue">
+  <jhub-page-header title="Asset catalogue" subtitle="Browse what is in the Vault, check live availability and add items to a request." />
+
+  <div class="filters">
+    <div class="toolbar">
+      <div class="input-icon grow">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          class="input"
+          type="search"
+          aria-label="Search assets"
+          placeholder="Search by name, tag or specification"
+          [ngModel]="assets.search()"
+          (ngModelChange)="assets.setSearch($event)"
+        />
+      </div>
+      <div class="segmented" role="group" aria-label="Availability">
+        <button type="button" [attr.aria-pressed]="assets.availability() === 'ALL'" (click)="assets.setAvailability('ALL')">All</button>
+        <button type="button" [attr.aria-pressed]="assets.availability() === 'IN_STOCK'" (click)="assets.setAvailability('IN_STOCK')">In stock</button>
+        <button type="button" [attr.aria-pressed]="assets.availability() === 'CHECKED_OUT'" (click)="assets.setAvailability('CHECKED_OUT')">Checked out</button>
+      </div>
+    </div>
+
+    <div class="chips" role="group" aria-label="Category">
+      <button type="button" class="chip" [attr.aria-pressed]="assets.category() === 'ALL'" (click)="assets.setCategory('ALL')">
+        All categories <span class="count">{{ assets.assets().length }}</span>
+      </button>
+      @for (category of categories; track category) {
+        <button type="button" class="chip" [attr.aria-pressed]="assets.category() === category" (click)="assets.setCategory(category)">
+          <i class="pi" [class]="'pi ' + meta[category].icon" aria-hidden="true"></i>
+          {{ meta[category].short }} <span class="count">{{ countIn(category) }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (assets.loading()) {
+    <div class="grid" aria-busy="true" aria-label="Loading assets">
+      @for (n of skeletons; track n) {
+        <div class="card asset">
+          <span class="skeleton media-skeleton"></span>
+          <div class="asset-body">
+            <span class="skeleton" style="height: 14px; width: 40%"></span>
+            <span class="skeleton" style="height: 20px; width: 80%"></span>
+            <span class="skeleton" style="height: 14px; width: 95%"></span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (assets.error()) {
+    <div class="card">
+      <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load the catalogue" text="Check your connection and try again.">
+        <button type="button" class="btn btn-secondary" (click)="assets.load()">Try again</button>
+      </jhub-empty>
+    </div>
+  } @else if (!assets.filteredAssets().length) {
+    <div class="card">
+      <jhub-empty
+        icon="pi-search"
+        [title]="hasFilters() ? 'No assets match your filters' : 'The catalogue is empty'"
+        [text]="hasFilters() ? 'Try a different search term or clear the filters to see everything.' : 'Assets will appear here once the Vault administrators add them.'"
+      >
+        @if (hasFilters()) { <button type="button" class="btn btn-secondary" (click)="assets.clearFilters()">Clear filters</button> }
+      </jhub-empty>
+    </div>
+  } @else {
+    <p class="result-count" aria-live="polite">
+      Showing <strong>{{ assets.filteredAssets().length }}</strong> of {{ assets.assets().length }} assets
+      @if (hasFilters()) { <button type="button" class="link" (click)="assets.clearFilters()">Clear filters</button> }
+    </p>
+
+    <div class="grid">
+      @for (asset of assets.filteredAssets(); track asset.id) {
+        <article class="card asset">
+          <div class="media">
+            <jhub-asset-image [url]="asset.imageUrl" [alt]="asset.name" />
+            <span class="badge badge-plain media-tag"><i class="pi" [class]="'pi ' + meta[asset.category].icon" aria-hidden="true"></i> {{ categoryShort(asset.category) }}</span>
+          </div>
+
+          <div class="asset-body">
+            <span class="tag">{{ asset.assetTag }}</span>
+            <h2 class="asset-name"><a class="stretched" [routerLink]="['/assets', asset.id]">{{ asset.name }}</a></h2>
+            <p class="asset-desc">{{ asset.description }}</p>
+
+            <div class="stock">
+              <div class="row-between">
+                <span class="stock-label" [class]="'stock-label tone-' + stockTone(asset.availableQty, asset.totalQuantity)">
+                  {{ asset.availableQty ? asset.availableQty + ' available' : 'Checked out' }}
+                </span>
+                <span class="muted">of {{ asset.totalQuantity }}</span>
+              </div>
+              <div class="meter" [class.is-low]="stockTone(asset.availableQty, asset.totalQuantity) === 'low'" [class.is-out]="asset.availableQty === 0" role="presentation">
+                <span [style.width.%]="asset.totalQuantity ? (asset.availableQty / asset.totalQuantity) * 100 : 0"></span>
+              </div>
+            </div>
+          </div>
+
+          <footer class="asset-actions">
+            <a class="btn btn-ghost btn-sm" [routerLink]="['/assets', asset.id]">Details</a>
+            @if (inRequest(asset.id); as quantity) {
+              <div class="qty" role="group" [attr.aria-label]="'Quantity of ' + asset.name + ' in your request'">
+                <button type="button" aria-label="Decrease quantity" (click)="change(asset, -1)"><i class="pi pi-minus" aria-hidden="true"></i></button>
+                <output>{{ quantity }}</output>
+                <button type="button" aria-label="Increase quantity" [disabled]="quantity >= asset.availableQty" (click)="change(asset, 1)"><i class="pi pi-plus" aria-hidden="true"></i></button>
+              </div>
+            } @else {
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="asset.availableQty === 0" (click)="add(asset)">
+                <i class="pi pi-plus" aria-hidden="true"></i> {{ asset.availableQty ? 'Add to request' : 'Unavailable' }}
+              </button>
+            }
+          </footer>
+        </article>
+      }
+    </div>
+  }
+</div>
+
+@if (request.hasItems()) {
+  <aside class="tray" aria-label="Your request">
+    <span class="tray-icon"><i class="pi pi-shopping-cart" aria-hidden="true"></i></span>
+    <div class="tray-copy">
+      <strong>{{ request.itemCount() }} {{ request.itemCount() === 1 ? 'unit' : 'units' }} in your request</strong>
+      <span>{{ request.draft().items.length }} {{ request.draft().items.length === 1 ? 'asset' : 'assets' }} selected</span>
+    </div>
+    <a class="btn btn-primary" routerLink="/app/cart">Review request</a>
+  </aside>
+}

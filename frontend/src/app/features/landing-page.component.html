@@ -1,0 +1,232 @@
+<section class="hero">
+  <div class="hero-art" aria-hidden="true">
+    <span class="hero-shape hero-shape-upper"></span>
+    <span class="hero-shape hero-shape-upper-soft"></span>
+    <span class="hero-shape hero-shape-left"></span>
+    <span class="hero-arc hero-arc-left"></span>
+    <span class="hero-arc hero-arc-right"></span>
+    <span class="hero-shape hero-shape-lower"></span>
+  </div>
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="hero-kicker"><i class="pi pi-shield" aria-hidden="true"></i> JHUB Africa asset register</p>
+      <h1>Borrow the tools.<br />Build the <span>future.</span></h1>
+      <p class="hero-lede">
+        Access the equipment you need to transform bold ideas into working prototypes. Explore JHUB Africa’s technology inventory, request available tools and track every step from collection to return.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" routerLink="/catalogue">Browse the catalogue</a>
+        @if (auth.user()) {
+          <a class="btn btn-secondary btn-lg" [routerLink]="auth.isAdmin() ? '/admin/dashboard' : '/app/dashboard'">Go to dashboard</a>
+        } @else {
+          <a class="btn btn-secondary btn-lg" routerLink="/auth/login">Sign in</a>
+        }
+      </div>
+
+      <p class="hero-live" [class.is-ready]="totalUnits() > 0">
+        <span class="live-dot" aria-hidden="true"></span>
+        @if (store.loading()) {
+          Checking what is in the Vault…
+        } @else if (store.error()) {
+          Live inventory is temporarily unavailable.
+        } @else if (availableAssetCount() > 0) {
+          <span><strong>{{ totalUnits() }}</strong> units available across <strong>{{ availableAssetCount() }}</strong> assets right now</span>
+        } @else if (assetCount() > 0) {
+          No units are currently available to borrow.
+        } @else {
+          No assets are listed in the Vault yet.
+        }
+      </p>
+    </div>
+
+    <section
+      class="showcase"
+      aria-label="Featured equipment"
+      aria-roledescription="carousel"
+      (mouseenter)="pointerPaused.set(true)"
+      (mouseleave)="pointerPaused.set(false)"
+      (focusin)="focusPaused.set(true)"
+      (focusout)="onShowcaseFocusOut($event)"
+      (keydown)="onShowcaseKeydown($event)"
+    >
+      @for (slide of [activeAsset()]; track slide?.id) {
+        @if (slide; as asset) {
+        <div class="showcase-stage">
+          <a class="showcase-image-link" [routerLink]="['/assets', asset.id]" [attr.aria-label]="'View ' + asset.name">
+            <jhub-asset-image
+              class="showcase-image"
+              [url]="asset.imageUrl"
+              [alt]="asset.name"
+              fit="contain"
+              loading="eager"
+            />
+          </a>
+          <span class="featured-badge"><i class="pi pi-sparkles" aria-hidden="true"></i> Featured equipment</span>
+          <span class="slide-count" aria-label="Slide number">{{ activeIndex() + 1 }} / {{ featuredAssets().length }}</span>
+          @if (featuredAssets().length > 1) {
+            <button type="button" class="showcase-arrow showcase-prev" aria-label="Previous equipment" (click)="goToSlide(activeIndex() - 1)">
+              <i class="pi pi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="showcase-arrow showcase-next" aria-label="Next equipment" (click)="goToSlide(activeIndex() + 1)">
+              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+            </button>
+          }
+        </div>
+
+        <a class="showcase-info" [routerLink]="['/assets', asset.id]">
+          <div class="showcase-category">
+            <span class="category-icon"><i class="pi" [class]="'pi ' + categoryIcon(asset.category)" aria-hidden="true"></i></span>
+            <span>{{ categoryLabel(asset.category) }}</span>
+          </div>
+          <span class="showcase-name">{{ asset.name }}</span>
+          <span class="showcase-description">{{ asset.description || 'View this equipment in the catalogue for its full details.' }}</span>
+          <span class="showcase-footer">
+            <span class="availability" [class.is-available]="asset.availableQty > 0">
+              <span class="availability-dot" aria-hidden="true"></span>
+              @if (asset.availableQty > 0) {
+                {{ asset.availableQty }} available
+              } @else {
+                Currently unavailable
+              }
+            </span>
+            <span class="showcase-link">View equipment <i class="pi pi-arrow-up-right" aria-hidden="true"></i></span>
+          </span>
+        </a>
+
+        @if (featuredAssets().length > 1) {
+          <div class="showcase-pagination" aria-label="Choose equipment slide">
+            @for (slide of featuredAssets(); track slide.id; let index = $index) {
+              <button
+                type="button"
+                class="pagination-dot"
+                [class.is-active]="index === activeIndex()"
+                [attr.aria-label]="'Show slide ' + (index + 1) + ': ' + slide.name"
+                [attr.aria-current]="index === activeIndex() ? 'true' : null"
+                (click)="goToSlide(index)"
+              ></button>
+            }
+          </div>
+        }
+        } @else {
+          <div class="showcase-empty">
+            <div class="showcase-empty-art" aria-hidden="true"><i class="pi pi-box"></i></div>
+            @if (store.loading()) {
+              <span class="empty-eyebrow">JHUB Africa Vault</span>
+              <h2>Discover the equipment</h2>
+              <p>Loading the latest inventory from the Vault.</p>
+            } @else if (store.error()) {
+              <span class="empty-eyebrow">Inventory unavailable</span>
+              <h2>Explore the catalogue</h2>
+              <p>We couldn’t load the featured equipment right now. You can still browse the catalogue.</p>
+            } @else {
+              <span class="empty-eyebrow">JHUB Africa Vault</span>
+              <h2>Ready for your next idea?</h2>
+              <p>Equipment will appear here as it is added to the Vault inventory.</p>
+            }
+            <a class="btn btn-primary" routerLink="/catalogue">Browse the catalogue <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+          </div>
+        }
+      }
+    </section>
+  </div>
+</section>
+
+<section class="section" id="categories">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2>Everything the Vault holds</h2>
+        <p>Explore the technology behind innovation, from microcontrollers and sensors to computing, networking and AV equipment.</p>
+      </div>
+      <a class="btn btn-secondary" routerLink="/catalogue">View all assets</a>
+    </div>
+
+    <div class="category-grid">
+      @for (category of categories; track category.value) {
+        <a class="category card card-link" routerLink="/catalogue" [queryParams]="{ category: category.value }">
+          <span class="category-icon"><i class="pi" [class]="'pi ' + category.icon" aria-hidden="true"></i></span>
+          <span class="category-copy">
+            <strong>{{ category.label }}</strong>
+            <small>
+              @if (store.loading()) { Loading… }
+              @else if (store.error()) { Browse catalogue }
+              @else if (assetCount() === 0) { No assets yet }
+              @else { {{ countIn(category.value) }} {{ countIn(category.value) === 1 ? 'asset' : 'assets' }} }
+            </small>
+          </span>
+          <i class="pi pi-arrow-right category-arrow" aria-hidden="true"></i>
+        </a>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section section-tint" id="how-it-works">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2>Your next prototype starts here</h2>
+        <p>Every loan follows a clear process, so you know what is being borrowed, by whom, and until when.</p>
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li class="card">
+        <span class="step-no">1</span>
+        <h3>Discover your equipment</h3>
+        <p>Explore the catalogue by name or category and check availability before requesting equipment.</p>
+        <a class="link" routerLink="/catalogue">Open the catalogue</a>
+      </li>
+      <li class="card">
+        <span class="step-no">2</span>
+        <h3>Request it for your project</h3>
+        <p>Submit your request with the project details and dates required by the Vault.</p>
+        <a class="link" routerLink="/auth/register">Create an account</a>
+      </li>
+      <li class="card">
+        <span class="step-no">3</span>
+        <h3>Collect, use and return</h3>
+        <p>Follow the approval and collection process, then return equipment so it can be used by the next innovator.</p>
+        <a class="link" routerLink="/auth/login">Sign in to track</a>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="trust">
+  <div class="container trust-grid">
+    <div class="trust-copy">
+      <h2>Built so every asset is accounted for</h2>
+      <p>Shared equipment only works when people can trust the record. The Vault keeps that record for you.</p>
+    </div>
+    <ul class="trust-list">
+      <li>
+        <i class="pi pi-users" aria-hidden="true"></i>
+        <div><strong>A named team on every request</strong><span>Each loan is tied to a project and the people responsible for it.</span></div>
+      </li>
+      <li>
+        <i class="pi pi-verified" aria-hidden="true"></i>
+        <div><strong>Human approval before anything leaves</strong><span>Administrators review requests, then check items out and back in.</span></div>
+      </li>
+      <li>
+        <i class="pi pi-history" aria-hidden="true"></i>
+        <div><strong>An audit trail you can inspect</strong><span>Changes to assets, users and requests are recorded with who made them.</span></div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="cta card">
+      <div>
+        <h2>What will you build next?</h2>
+        <p>Create an account to start requesting equipment for your project.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-primary btn-lg" routerLink="/auth/register">Create an account</a>
+        <a class="btn btn-secondary btn-lg" routerLink="/catalogue">Explore the catalogue</a>
+      </div>
+    </div>
+  </div>
+</section>

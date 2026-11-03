@@ -1,0 +1,118 @@
+<jhub-page-header title="Users" subtitle="Everyone with an account in the Vault. Update names, contact details and roles." />
+
+@if (loading()) {
+  <div class="stat-grid" aria-busy="true">@for (n of [1, 2, 3]; track n) { <span class="skeleton" style="height: 104px; border-radius: var(--r-lg)"></span> }</div>
+} @else if (error()) {
+  <div class="card">
+    <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load users" [text]="error()!">
+      <button type="button" class="btn btn-secondary" (click)="loadUsers()">Try again</button>
+    </jhub-empty>
+  </div>
+} @else {
+  <div class="stack" style="--gap: 20px">
+    <section class="stat-grid" aria-label="User summary">
+      <div class="stat"><div class="stat-top">Total users <span class="stat-icon"><i class="pi pi-users" aria-hidden="true"></i></span></div><div class="stat-value">{{ users().length }}</div></div>
+      <div class="stat"><div class="stat-top">Innovators <span class="stat-icon is-green"><i class="pi pi-user" aria-hidden="true"></i></span></div><div class="stat-value">{{ innovatorsCount() }}</div></div>
+      <div class="stat"><div class="stat-top">Administrators <span class="stat-icon is-violet"><i class="pi pi-shield" aria-hidden="true"></i></span></div><div class="stat-value">{{ adminsCount() }}</div></div>
+    </section>
+
+    <section class="card" aria-labelledby="directory-title">
+      <div class="card-head">
+        <div><h2 class="card-title" id="directory-title">User directory</h2><p class="card-sub">{{ filteredUsers().length }} of {{ users().length }} users</p></div>
+      </div>
+      <div class="toolbar bar">
+        <div class="input-icon grow">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <input class="input" type="search" aria-label="Search users" placeholder="Search by name, email, phone or ID" [ngModel]="search()" (ngModelChange)="setSearch($event)" />
+        </div>
+        <select class="select role-select" aria-label="Filter by role" [ngModel]="roleFilter()" (ngModelChange)="setRoleFilter($event)">
+          <option value="ALL">All roles</option>
+          <option [value]="Role.INNOVATOR">Innovators</option>
+          <option [value]="Role.ADMIN">Administrators</option>
+        </select>
+        @if (search() || roleFilter() !== 'ALL') { <button type="button" class="btn btn-ghost" (click)="clearFilters()">Reset</button> }
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Role</th><th>Registered</th><th class="actions">Actions</th></tr></thead>
+          <tbody>
+            @for (user of pageUsers(); track user.id) {
+              <tr>
+                <td>
+                  <div class="person">
+                    <span class="avatar">@if (user.avatarUrl) { <img [src]="user.avatarUrl" [alt]="user.fullName" /> } @else { {{ initials(user.fullName) }} }</span>
+                    <span><span class="cell-title">{{ user.fullName }}</span><span class="cell-sub">{{ user.identificationId }}</span></span>
+                  </div>
+                </td>
+                <td>{{ user.email }}</td>
+                <td class="nowrap">{{ user.phoneNumber || '—' }}</td>
+                <td><span class="badge badge-plain" [class.badge-checked_out]="user.role === Role.ADMIN" [class.badge-neutral]="user.role !== Role.ADMIN">{{ user.role === Role.ADMIN ? 'Administrator' : 'Innovator' }}</span></td>
+                <td class="nowrap">{{ user.createdAt | date: 'd MMM y' }}</td>
+                <td class="actions">
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="viewUser(user)">View</button>
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="editUser(user)">Edit</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6">
+                <jhub-empty icon="pi-users" [title]="users().length ? 'No users match your filters' : 'No users yet'" [text]="users().length ? 'Try a different search or role.' : 'Registered accounts will appear here.'">
+                  @if (users().length) { <button type="button" class="btn btn-secondary" (click)="clearFilters()">Reset filters</button> }
+                </jhub-empty>
+              </td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pager">
+        <span>Showing <strong>{{ showingStart() }}–{{ showingEnd() }}</strong> of <strong>{{ filteredUsers().length }}</strong> users</span>
+        <div class="pager-controls">
+          <label>Rows
+            <select class="select" [ngModel]="pageSize()" (ngModelChange)="setPageSize($event)" aria-label="Users per page"><option [ngValue]="10">10</option><option [ngValue]="25">25</option><option [ngValue]="50">50</option></select>
+          </label>
+          <button type="button" class="pager-btn" [disabled]="page() <= 1" (click)="setPage(page() - 1)" aria-label="Previous page"><i class="pi pi-angle-left" aria-hidden="true"></i></button>
+          <span class="page-of">{{ page() }} / {{ pageCount() }}</span>
+          <button type="button" class="pager-btn" [disabled]="page() >= pageCount()" (click)="setPage(page() + 1)" aria-label="Next page"><i class="pi pi-angle-right" aria-hidden="true"></i></button>
+        </div>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (dialogMode() && selectedUser(); as user) {
+  @if (dialogMode() === 'view') {
+    <jhub-modal [title]="user.fullName" subtitle="Account details" (closed)="closeDialog()">
+      <dl class="facts">
+        <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ user.phoneNumber || '—' }}</dd></div>
+        <div><dt>ID number</dt><dd>{{ user.identificationId }}</dd></div>
+        <div><dt>Role</dt><dd>{{ user.role === Role.ADMIN ? 'Administrator' : 'Innovator' }}</dd></div>
+        <div><dt>Department</dt><dd>{{ user.department || '—' }}</dd></div>
+        <div><dt>Registered</dt><dd>{{ user.createdAt | date: 'mediumDate' }}</dd></div>
+      </dl>
+      <footer class="modal-foot" modal-footer>
+        <button type="button" class="btn btn-secondary" (click)="closeDialog()">Close</button>
+        <button type="button" class="btn btn-primary" (click)="editUser(user)">Edit user</button>
+      </footer>
+    </jhub-modal>
+  } @else {
+    <jhub-modal [title]="'Edit ' + user.fullName" subtitle="Changes are recorded in the audit log." [busy]="saving()" (closed)="closeDialog()">
+      <form id="user-form" class="form-grid" (ngSubmit)="saveUser()">
+        <div class="field full"><label for="u-name">Full name</label><input id="u-name" class="input" name="fullName" [(ngModel)]="draft.fullName" required maxlength="120" /></div>
+        <div class="field"><label for="u-phone">Phone number</label><input id="u-phone" class="input" name="phoneNumber" [(ngModel)]="draft.phoneNumber" required maxlength="40" /></div>
+        <div class="field"><label for="u-dept">Department <span class="optional">(optional)</span></label><input id="u-dept" class="input" name="department" [(ngModel)]="draft.department" maxlength="120" /></div>
+        <div class="field full">
+          <label for="u-role">Role</label>
+          <select id="u-role" class="select" name="role" [(ngModel)]="draft.role" required><option [ngValue]="Role.INNOVATOR">Innovator</option><option [ngValue]="Role.ADMIN">Administrator</option></select>
+          <span class="hint">Administrators can manage requests, inventory and users.</span>
+        </div>
+        @if (formError()) { <div class="alert alert-danger full" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ formError() }}</div></div> }
+      </form>
+      <footer class="modal-foot" modal-footer>
+        <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="closeDialog()">Cancel</button>
+        <button type="submit" form="user-form" class="btn btn-primary" [class.is-loading]="saving()" [disabled]="saving()">Save changes</button>
+      </footer>
+    </jhub-modal>
+  }
+}

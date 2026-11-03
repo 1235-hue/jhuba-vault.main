@@ -62,3 +62,12 @@ describe('authentication boundaries', () => {
     expect(claims.passwordHash).toBeUndefined();
   });
 });
+
+
+  it('rejects local, prefixed, malformed, and unsupported Kenyan phone formats', () => {
+    for (const phoneNumber of [
+      '0712345678',
+      '712345678',
+      '254712345678',
+      '+2540712345678',
+      '+254712

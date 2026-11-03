@@ -1,0 +1,3 @@
+.chevron { width: 40px; color: var(--text-4); text-align: right; }
+.chevron .pi { font-size: 0.75rem; }
+tr:hover .chevron { color: var(--navy); }

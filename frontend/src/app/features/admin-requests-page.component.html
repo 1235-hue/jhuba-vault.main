@@ -1,0 +1,109 @@
+<jhub-page-header title="Requests" subtitle="Review innovator requests, then check equipment out and back in." />
+
+<section class="card">
+  <div class="tabs" role="tablist" aria-label="Filter by status">
+    <button type="button" class="tab" role="tab" [attr.aria-selected]="status() === ''" (click)="setStatus('')">All <span class="count">{{ totalRequests() ?? '—' }}</span></button>
+    @for (value of statuses; track value) {
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="status() === value" (click)="setStatus(value)">
+        {{ statusLabel(value) }} <span class="count">{{ countFor(value) }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="toolbar bar">
+    <div class="input-icon grow">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input class="input" type="search" maxlength="100" aria-label="Search requests" placeholder="Search by project, innovator or request ID" [ngModel]="search()" (ngModelChange)="onSearch($event)" />
+    </div>
+    <div class="filter">
+      <button type="button" class="btn btn-secondary" [attr.aria-expanded]="filterMenuOpen()" (click)="toggleFilterMenu()">
+        <i class="pi pi-calendar" aria-hidden="true"></i> Date range
+        @if (dateFrom() || dateTo()) { <span class="dot" aria-label="Filter active"></span> }
+      </button>
+      @if (filterMenuOpen()) {
+        <div class="popover card" role="dialog" aria-label="Filter by date">
+          <div class="field"><label for="date-from">Requested from</label><input id="date-from" class="input" type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" [max]="dateTo() || null" /></div>
+          <div class="field"><label for="date-to">Requested to</label><input id="date-to" class="input" type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" [min]="dateFrom() || null" /></div>
+          <div class="form-actions"><button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Clear</button><button type="button" class="btn btn-primary btn-sm" (click)="applyDateFilters()">Apply</button></div>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state" role="status"><span class="spinner"></span> Loading requests…</div>
+  } @else if (pageError()) {
+    <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load requests" [text]="pageError()!">
+      <button type="button" class="btn btn-secondary" (click)="loadPage()">Try again</button>
+    </jhub-empty>
+  } @else if (!requests().length) {
+    <jhub-empty
+      icon="pi-inbox"
+      [title]="totalRequests() === 0 ? 'No requests yet' : 'No requests match your filters'"
+      [text]="totalRequests() === 0 ? 'Requests from innovators appear here for review.' : 'Try a different status, search term or date range.'"
+    >
+      @if (totalRequests() !== 0) { <button type="button" class="btn btn-secondary" (click)="resetAll()">Reset filters</button> }
+    </jhub-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Project</th><th>Innovator</th><th>Equipment</th><th>Status</th><th class="actions">Actions</th></tr>
+        </thead>
+        <tbody>
+          @for (request of requests(); track request.id) {
+            <tr>
+              <td class="project">
+                <a class="cell-title" [routerLink]="['/app/requests', request.id]">{{ request.projectName }}</a>
+                <span class="cell-sub">{{ request.id | reqRef }} · {{ request.createdAt | date: 'd MMM y' }}</span>
+              </td>
+              <td>
+                <div class="person">
+                  <span class="avatar avatar-sm">{{ initials(request.innovator?.fullName) }}</span>
+                  <span><span class="cell-title">{{ request.innovator?.fullName || 'Unknown innovator' }}</span><span class="cell-sub">{{ request.innovator?.identificationId || '—' }}</span></span>
+                </div>
+              </td>
+              <td class="equipment">
+                @if (request.requestItems[0]; as first) {
+                  <span class="cell-title">{{ first.asset.name }} <span class="muted">× {{ first.quantity }}</span></span>
+                  @if (request.requestItems.length > 1) { <span class="cell-sub">+ {{ request.requestItems.length - 1 }} more {{ request.requestItems.length === 2 ? 'item' : 'items' }} · {{ request.loanDays }} days</span> }
+                  @else { <span class="cell-sub">{{ request.loanDays }} days</span> }
+                }
+              </td>
+              <td><jhub-status [status]="request.status" /></td>
+              <td class="actions">
+                @if (request.status === RequestStatus.PENDING) {
+                  <button type="button" class="btn btn-sm btn-primary" [disabled]="busyId() === request.id" (click)="approve(request)">Approve</button>
+                  <button type="button" class="btn btn-sm btn-danger-soft" [disabled]="busyId() === request.id" (click)="reject(request)">Reject</button>
+                } @else if (request.status === RequestStatus.APPROVED) {
+                  <button type="button" class="btn btn-sm btn-primary" [disabled]="busyId() === request.id" (click)="checkout(request)">Check out</button>
+                } @else if (request.status === RequestStatus.CHECKED_OUT || request.status === RequestStatus.OVERDUE) {
+                  <button type="button" class="btn btn-sm btn-success" [disabled]="busyId() === request.id" (click)="returnRequest(request)">Mark returned</button>
+                }
+                <a class="btn btn-sm btn-ghost btn-icon" [routerLink]="['/app/requests', request.id]" [attr.aria-label]="'View ' + request.projectName"><i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pager">
+      <span>Showing <strong>{{ pageStart() }}–{{ pageEnd() }}</strong> of <strong>{{ filteredTotal() }}</strong> requests</span>
+      <div class="pager-controls">
+        <label>Rows
+          <select class="select" aria-label="Requests per page" [ngModel]="pageSize()" (ngModelChange)="setPageSize($event)">
+            @for (size of pageSizes; track size) { <option [ngValue]="size">{{ size }}</option> }
+          </select>
+        </label>
+        <nav class="pager-controls" aria-label="Pages">
+          <button type="button" class="pager-btn" aria-label="Previous page" [disabled]="page() <= 1" (click)="goToPage(page() - 1)"><i class="pi pi-angle-left" aria-hidden="true"></i></button>
+          @for (pageNumber of pageNumbers(); track pageNumber) {
+            <button type="button" class="pager-btn" [class.is-current]="page() === pageNumber" [attr.aria-current]="page() === pageNumber ? 'page' : null" (click)="goToPage(pageNumber)">{{ pageNumber }}</button>
+          }
+          <button type="button" class="pager-btn" aria-label="Next page" [disabled]="page() >= totalPages()" (click)="goToPage(page() + 1)"><i class="pi pi-angle-right" aria-hidden="true"></i></button>
+        </nav>
+      </div>
+    </footer>
+  }
+</section>

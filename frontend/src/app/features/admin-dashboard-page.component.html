@@ -1,0 +1,140 @@
+<jhub-page-header title="Dashboard" [subtitle]="(today | date: 'EEEE, d MMMM y') ?? ''">
+  <span class="badge" [class.badge-success]="systemStatus() === 'online'" [class.badge-danger]="systemStatus() === 'unavailable'" [class.badge-neutral]="systemStatus() === 'checking'">
+    {{ systemStatus() === 'checking' ? 'Checking system' : systemStatus() === 'online' ? 'System online' : 'System unavailable' }}
+  </span>
+  <a class="btn btn-primary" routerLink="/admin/requests">Review requests</a>
+</jhub-page-header>
+
+@if (loading()) {
+  <div class="stat-grid" aria-busy="true">
+    @for (n of [1, 2, 3, 4, 5]; track n) { <span class="skeleton" style="height: 112px; border-radius: var(--r-lg)"></span> }
+  </div>
+} @else if (error()) {
+  <div class="card">
+    <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load the dashboard" [text]="error()!">
+      <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+    </jhub-empty>
+  </div>
+} @else if (metrics(); as data) {
+  <div class="stack" style="--gap: 20px">
+    <section class="stat-grid" aria-label="Summary">
+      <a class="stat" routerLink="/admin/assets">
+        <div class="stat-top">Total assets <span class="stat-icon"><i class="pi pi-tags" aria-hidden="true"></i></span></div>
+        <div class="stat-value">{{ data.totalAssets }}</div>
+      </a>
+      <a class="stat" routerLink="/admin/inventory">
+        <div class="stat-top">Units available <span class="stat-icon is-green"><i class="pi pi-check-circle" aria-hidden="true"></i></span></div>
+        <div class="stat-value">{{ data.availableInventory }}</div>
+      </a>
+      <a class="stat" routerLink="/admin/inventory">
+        <div class="stat-top">Units on loan <span class="stat-icon is-violet"><i class="pi pi-box" aria-hidden="true"></i></span></div>
+        <div class="stat-value">{{ data.checkedOutInventory }}</div>
+      </a>
+      <a class="stat" routerLink="/admin/requests">
+        <div class="stat-top">Pending requests <span class="stat-icon is-amber"><i class="pi pi-clock" aria-hidden="true"></i></span></div>
+        <div class="stat-value">{{ data.pendingRequests }}</div>
+        @if (data.pendingRequests) { <div class="stat-note">Waiting for review</div> }
+      </a>
+      <a class="stat" routerLink="/admin/requests">
+        <div class="stat-top">Overdue loans <span class="stat-icon is-red"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i></span></div>
+        <div class="stat-value">{{ data.overdueRequests }}</div>
+        @if (data.overdueRequests) { <div class="stat-note">Need follow-up</div> }
+      </a>
+    </section>
+
+    <div class="split">
+      <article class="card">
+        <div class="card-head">
+          <div><h2 class="card-title">Requests over time</h2><p class="card-sub">Last six months</p></div>
+          <div class="legend" aria-label="Request statuses">
+            @for (status of requestStatuses; track status) { <span><i [style.background]="statusColor(status)" aria-hidden="true"></i>{{ statusLabel(status) }}</span> }
+          </div>
+        </div>
+        <div class="card-body">
+          <svg class="chart" viewBox="0 0 620 205" role="img" aria-labelledby="chart-title chart-desc" preserveAspectRatio="xMidYMid meet">
+            <title id="chart-title">Request activity by month</title>
+            <desc id="chart-desc">Pending, approved and rejected requests for the last six months.</desc>
+            @for (tick of chartTicks(); track tick.value) {
+              <line x1="48" x2="604" [attr.y1]="tick.y" [attr.y2]="tick.y" class="grid-line" />
+              <text x="38" [attr.y]="tick.y + 4" text-anchor="end" class="axis">{{ tick.value }}</text>
+            }
+            @for (status of requestStatuses; track status) {
+              <path [attr.d]="seriesPath(status)" fill="none" [attr.stroke]="statusColor(status)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              @for (point of chartActivity(); track point.month; let index = $index) {
+                <circle [attr.cx]="chartX(index)" [attr.cy]="chartY(requestStatusCount(point, status))" r="3.5" [attr.fill]="statusColor(status)" stroke="#fff" stroke-width="1.5">
+                  <title>{{ point.label }} · {{ statusLabel(status) }}: {{ requestStatusCount(point, status) }}</title>
+                </circle>
+              }
+            }
+            @for (point of chartActivity(); track point.month; let index = $index) {
+              <text [attr.x]="chartX(index)" y="192" text-anchor="middle" class="axis">{{ point.shortLabel }}</text>
+            }
+          </svg>
+          @if (!hasRequestActivity()) { <p class="muted chart-note">No requests in the last six months yet.</p> }
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div><h2 class="card-title">Assets by category</h2><p class="card-sub">Units in inventory</p></div><a class="link" routerLink="/admin/inventory">Inventory</a></div>
+        @if (categoryDistribution().length) {
+          <div class="card-body category">
+            <div class="donut" [style.background]="donutBackground()" role="img" [attr.aria-label]="categoryChartLabel()"><span><strong>{{ categoryTotal() }}</strong><small>units</small></span></div>
+            <ul class="cat-legend">
+              @for (category of categoryDistribution(); track category.category) {
+                <li>
+                  <i [style.background]="category.color" aria-hidden="true"></i>
+                  <span>{{ categoryLabel(category.category) }}</span>
+                  <strong>{{ category.quantity }}</strong>
+                  <small>{{ category.quantity / (categoryTotal() || 1) | percent: '1.0-0' }}</small>
+                </li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <jhub-empty icon="pi-chart-pie" title="No inventory yet" text="The category breakdown appears once assets are added." />
+        }
+      </article>
+    </div>
+
+    <div class="split">
+      <article class="card">
+        <div class="card-head"><h2 class="card-title">Recent requests</h2><a class="link" routerLink="/admin/requests">View all</a></div>
+        @if (recentRequests().length) {
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Project</th><th>Innovator</th><th>Submitted</th><th>Status</th></tr></thead>
+              <tbody>
+                @for (request of recentRequests(); track request.id) {
+                  <tr>
+                    <td><a class="cell-title stretched" [routerLink]="['/app/requests', request.id]">{{ request.projectName }}</a><span class="cell-sub">{{ request.id | reqRef }}</span></td>
+                    <td>{{ request.innovator?.fullName || 'Unknown' }}</td>
+                    <td class="nowrap">{{ request.createdAt | date: 'd MMM y' }}</td>
+                    <td><jhub-status [status]="request.status" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <jhub-empty icon="pi-inbox" title="No requests yet" text="New requests from innovators will appear here." />
+        }
+      </article>
+
+      <article class="card">
+        <div class="card-head"><h2 class="card-title">Recent activity</h2><a class="link" routerLink="/admin/audit-log">Audit log</a></div>
+        @if (recentActivity().length) {
+          <ol class="activity">
+            @for (activity of recentActivity(); track activity.id) {
+              <li>
+                <span class="activity-icon"><i class="pi" [class]="'pi ' + activityIcon(activity.action)" aria-hidden="true"></i></span>
+                <div><strong>{{ activityLabel(activity) }}</strong><small>{{ activity.actor?.fullName || 'System' }} · {{ activity.createdAt | date: 'd MMM, h:mm a' }}</small></div>
+              </li>
+            }
+          </ol>
+        } @else {
+          <jhub-empty icon="pi-history" title="No activity yet" text="Changes to assets, users and requests are recorded here." />
+        }
+      </article>
+    </div>
+  </div>
+}

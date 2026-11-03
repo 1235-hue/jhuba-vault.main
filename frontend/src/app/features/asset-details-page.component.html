@@ -1,0 +1,95 @@
+<div class="container details">
+  @if (loading()) {
+    <div class="split-even skeletons" aria-busy="true">
+      <span class="skeleton" style="aspect-ratio: 4 / 3; border-radius: var(--r-lg)"></span>
+      <div class="stack"><span class="skeleton" style="height: 18px; width: 30%"></span><span class="skeleton" style="height: 36px; width: 70%"></span><span class="skeleton" style="height: 90px"></span></div>
+    </div>
+  } @else if (error()) {
+    <div class="card">
+      @if (error() === 'not-found') {
+        <jhub-empty icon="pi-search" title="We couldn’t find that asset" text="It may have been removed from the Vault.">
+          <a class="btn btn-secondary" routerLink="/catalogue">Back to the catalogue</a>
+        </jhub-empty>
+      } @else {
+        <jhub-empty icon="pi-exclamation-circle" tone="danger" title="We couldn’t load this asset" text="Check your connection and try again.">
+          <button type="button" class="btn btn-secondary" (click)="loadAsset(asset()?.id ?? null)">Try again</button>
+          <a class="btn btn-ghost" routerLink="/catalogue">Back to the catalogue</a>
+        </jhub-empty>
+      }
+    </div>
+  } @else if (asset(); as item) {
+    <jhub-page-header
+      [title]="item.name"
+      [crumbs]="[{ label: 'Catalogue', link: '/catalogue' }, { label: categoryLabel() }, { label: item.assetTag }]"
+    />
+
+    <div class="layout">
+      <div class="media card"><jhub-asset-image [url]="item.imageUrl" [alt]="item.name" fit="contain" loading="eager" /></div>
+
+      <div class="stack" style="--gap: 20px">
+        <section class="card summary">
+          <div class="row">
+            <span class="tag">{{ item.assetTag }}</span>
+            <span class="badge" [class]="'badge ' + (item.availableQty > 0 ? 'badge-success' : 'badge-danger')">
+              {{ item.availableQty > 0 ? 'Available' : 'Checked out' }}
+            </span>
+          </div>
+          <p class="description">{{ item.description }}</p>
+
+          <dl class="facts">
+            <div><dt>Category</dt><dd>{{ categoryLabel() }}</dd></div>
+            <div><dt>Availability</dt><dd>{{ item.availableQty }} of {{ item.totalQuantity }} units</dd></div>
+            <div><dt>Unit value</dt><dd>{{ item.price | currency: 'KES' : 'KSh ' : '1.0-0' }}</dd></div>
+          </dl>
+
+          <div class="meter" [class.is-low]="stockTone(item.availableQty, item.totalQuantity) === 'low'" [class.is-out]="item.availableQty === 0" role="presentation">
+            <span [style.width.%]="item.totalQuantity ? (item.availableQty / item.totalQuantity) * 100 : 0"></span>
+          </div>
+        </section>
+
+        <section class="card request-box" aria-label="Request this asset">
+          @if (item.availableQty > 0) {
+            <div class="row-between">
+              <div>
+                <h2 class="section-title">Add to your request</h2>
+                <p class="muted">Choose how many units your project needs.</p>
+              </div>
+              <div class="qty" role="group" aria-label="Quantity">
+                <button type="button" aria-label="Decrease quantity" [disabled]="quantity() <= 1" (click)="step(-1)"><i class="pi pi-minus" aria-hidden="true"></i></button>
+                <output>{{ quantity() }}</output>
+                <button type="button" aria-label="Increase quantity" [disabled]="quantity() >= item.availableQty" (click)="step(1)"><i class="pi pi-plus" aria-hidden="true"></i></button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg btn-block" (click)="requestAsset()">
+              <i class="pi pi-plus" aria-hidden="true"></i> Add to request
+            </button>
+          } @else {
+            <div class="alert alert-warning">
+              <i class="pi pi-clock" aria-hidden="true"></i>
+              <div class="alert-body"><span class="alert-title">Currently checked out</span>All units are on loan. Check back soon or browse similar assets.</div>
+            </div>
+          }
+
+          @if (inRequest() > 0) {
+            <div class="alert alert-success" role="status">
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <div class="alert-body">{{ inRequest() }} {{ inRequest() === 1 ? 'unit' : 'units' }} of this asset {{ inRequest() === 1 ? 'is' : 'are' }} in your request.</div>
+              <a class="alert-action link" routerLink="/app/cart">Review request</a>
+            </div>
+          }
+        </section>
+      </div>
+    </div>
+
+    @if (specifications().length) {
+      <section class="card specs" aria-labelledby="specs-title">
+        <div class="card-head"><h2 class="card-title" id="specs-title">Technical specifications</h2></div>
+        <dl class="spec-list">
+          @for (spec of specifications(); track spec[0]) {
+            <div><dt>{{ spec[0] }}</dt><dd>{{ spec[1] }}</dd></div>
+          }
+        </dl>
+      </section>
+    }
+  }
+</div>

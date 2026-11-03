@@ -1,22 +1,134 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { RequestStatus } from '../core/models';
 import { RequestService } from '../core/api.service';
 import { RequestStore } from '../state/request.store';
+import { EmptyStateComponent } from '../shared/empty-state.component';
+import { PageHeaderComponent } from '../shared/page-header.component';
 
-@Component({ selector: 'jhub-workspace-page', standalone: true, styleUrls: ['./innovator-theme.component.css'], imports: [ReactiveFormsModule, RouterLink], changeDetection: ChangeDetectionStrategy.OnPush, template: `
-  @if (isNew()) { <main class="workspace page-width"><p class="eyebrow">NEW ASSET REQUEST / {{ step() + 1 }} OF 4</p><h1>Turn a need into a <em>request.</em></h1><div class="wizard-steps">@for (name of stepNames; track name; let index = $index) {<span [class.current]="step() === index" [class.complete]="step() > index">{{ index + 1 }} {{ name }}</span>}</div>@if (step() === 0) {<section class="wizard-panel"><h2>Selected assets</h2><p>Review the components collected from the catalogue before adding project context.</p>@if (!request.hasItems()) {<div class="state-box">No assets selected. <a routerLink="/catalogue">Browse the catalogue</a></div>}@else {@for (item of request.draft().items; track item.assetId) {<div class="selected-item"><span>{{ item.asset.name }}<small>{{ item.asset.assetTag }}</small></span><strong>{{ item.quantity }}</strong><button (click)="request.removeAsset(item.assetId)">Remove</button></div>}<button class="primary-button" (click)="next()">Continue to project information <span>→</span></button>}</section>} @else if (step() === 1) {<form class="wizard-panel" [formGroup]="projectForm" (ngSubmit)="saveProject()"><h2>Project information</h2><label>Project name<input formControlName="projectName">@if (invalid('projectName')) {<small>Project name is required.</small>}</label><label>Project abstract / description<textarea rows="5" formControlName="projectAbstract"></textarea>@if (invalid('projectAbstract')) {<small>Describe the project.</small>}</label><div class="two-fields"><label>Loan duration (days)<input type="number" min="1" max="365" formControlName="loanDays"></label><label>Target start date<input type="date" formControlName="startDate"></label></div><div class="wizard-actions"><button type="button" class="secondary-button" (click)="back()">Back</button><button class="primary-button" type="submit">Continue <span>→</span></button></div></form>} @else if (step() === 2) {<section class="wizard-panel"><h2>Team members</h2><p>Add the people responsible for the project.</p>@for (member of members(); track $index) {<div class="selected-item"><span>{{ member.name }}<small>{{ member.email }} · {{ member.role }}</small></span><button (click)="removeMember($index)">Remove</button></div>}<form class="member-form" [formGroup]="memberForm" (ngSubmit)="addMember()"><input formControlName="name" placeholder="Full name"><input type="email" formControlName="email" placeholder="Email address"><input formControlName="phone" placeholder="Phone number"><input formControlName="role" placeholder="Role in project"><button class="secondary-button" type="submit">+ Add team member</button></form><div class="wizard-actions"><button class="secondary-button" (click)="back()">Back</button><button class="primary-button" [disabled]="!members().length" (click)="next()">Review request <span>→</span></button></div></section>} @else {<section class="wizard-panel"><h2>Review request</h2><div class="review-block"><p class="eyebrow">PROJECT</p><strong>{{ request.draft().projectName }}</strong><p>{{ request.draft().projectAbstract }}</p><span>{{ request.draft().loanDays }} days · starts {{ request.draft().startDate }}</span></div><div class="review-block"><p class="eyebrow">ASSETS</p>@for (item of request.draft().items; track item.assetId) {<div>{{ item.asset.name }} <strong>× {{ item.quantity }}</strong></div>}</div><div class="review-block"><p class="eyebrow">TEAM</p>@for (member of members(); track member.email) {<div>{{ member.name }} · {{ member.role }}</div>}</div><div class="wizard-actions"><button class="secondary-button" (click)="back()">Edit</button><button class="primary-button" (click)="submit()">Submit request <span>→</span></button></div></section>}</main> } @else if (isRequests()) {<main class="workspace page-width"><div class="workspace-heading"><div><p class="eyebrow">INNOVATOR WORKSPACE</p><h1>My <em>requests.</em></h1></div><a class="primary-button" routerLink="/app/requests/new">New request <span>→</span></a></div><section class="table-panel"><div class="table-row table-head"><span>Project</span><span>Submitted</span><span>Status</span><span>Details</span></div><div class="table-row"><span><strong>AgriSense Soil Monitor</strong><small>JHUB-IOT-001 · 2 assets</small></span><span>12 Sep 2026</span><span class="status pending">{{ RequestStatus.PENDING }}</span><a routerLink="/app/requests/new">View ↗</a></div></section></main>} @else {<main class="workspace page-width"><div class="workspace-heading"><div><p class="eyebrow">INNOVATOR WORKSPACE</p><h1>Active <em>loans.</em></h1><p>Keep an eye on expected return dates and the assets in your care.</p></div></div><section class="table-panel"><div class="table-row table-head"><span>Project</span><span>Assets</span><span>Expected return</span><span>Status</span></div><div class="table-row"><span><strong>AgriSense Soil Monitor</strong><small>2 components</small></span><span>ESP32 DevKit × 2</span><span>24 Sep 2026</span><span class="status approved">{{ RequestStatus.CHECKED_OUT }}</span></div></section></main>}
-`, styles: [`:host{display:block}.workspace{padding:60px 0 110px}.eyebrow{color:#3ea945;font-size:10px;font-weight:800;letter-spacing:2px;margin:0 0 16px}.workspace h1{font:400 clamp(42px,5vw,60px)/1.05 Georgia,serif;color:#262571;margin:0 0 28px}.workspace h1 em{color:#3ea945}.wizard-steps{display:flex;gap:0;margin-bottom:25px}.wizard-steps span{padding:12px 18px;background:#e9edf5;color:#7c8492;font-size:11px}.wizard-steps span.current{background:#262571;color:#fff}.wizard-steps span.complete{background:#e5f2e6;color:#26742b}.wizard-panel,.table-panel{background:#fff;border:1px solid #e6e8ee;padding:28px;max-width:800px}.wizard-panel h2{font:30px Georgia,serif;color:#262571;margin:0 0 8px}.wizard-panel>p{font-size:12px;color:#667083;margin:0 0 25px}.selected-item{display:flex;align-items:center;gap:15px;padding:15px 0;border-top:1px solid #edf0f4;font-size:13px}.selected-item span{flex:1;color:#262571;font-weight:700}.selected-item small{display:block;color:#7c8492;font-size:10px;font-weight:400;margin-top:4px}.selected-item button{border:0;background:transparent;color:#e6292a;font-size:11px}.wizard-panel label{display:block;color:#586174;font-size:11px;margin:16px 0}.wizard-panel input,.wizard-panel textarea{display:block;width:100%;border:1px solid #dce0e8;padding:12px;margin-top:7px;outline-color:#3ea945}.wizard-panel small{color:#e6292a;font-size:10px}.two-fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}.wizard-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:25px}.member-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}.member-form input{margin:0}.review-block{padding:18px 0;border-top:1px solid #edf0f4;color:#667083;font-size:12px}.review-block strong{color:#262571}.review-block p:not(.eyebrow){line-height:1.6}.workspace-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:35px}.workspace-heading h1{margin:0}.table-row{display:grid;grid-template-columns:2fr 1fr 1fr .7fr;gap:15px;align-items:center;padding:16px 0;border-bottom:1px solid #edf0f4;font-size:12px;color:#667083}.table-row strong,.table-row small{display:block}.table-row strong{color:#262571}.table-row small{font-size:10px;margin-top:5px}.table-head{color:#7c8492;text-transform:uppercase;font-size:9px;letter-spacing:1px}.status{font-size:10px;font-weight:800}.pending{color:#b17b19}.approved{color:#3ea945}.table-row a{color:#262571;text-decoration:none;font-weight:700}@media(max-width:760px){.workspace{padding-top:45px}.wizard-steps{overflow:auto}.wizard-steps span{white-space:nowrap;padding:10px}.two-fields,.member-form{grid-template-columns:1fr}.workspace-heading{display:block}.workspace-heading .primary-button{display:inline-flex;margin-top:20px}.table-panel{overflow:auto}.table-row{min-width:680px}}`]
+type Step = 0 | 1 | 2;
+
+/** The request wizard: project details, team, then review and submit. Equipment is chosen in the cart. */
+@Component({
+  selector: 'jhub-workspace-page',
+  standalone: true,
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, EmptyStateComponent, PageHeaderComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './workspace-page.component.html',
+  styleUrl: './workspace-page.component.css'
 })
 export class WorkspacePageComponent {
-  protected readonly request = inject(RequestStore); private readonly requestService = inject(RequestService); private readonly router = inject(Router); private readonly fb = inject(FormBuilder); protected readonly RequestStatus = RequestStatus; protected readonly stepNames = ['Components', 'Project', 'Team', 'Review', 'Submit']; protected readonly step = computed(() => this.currentStep); private currentStep = 0; protected readonly members = computed(() => this.request.draft().teamMembers);
-  protected readonly projectForm = this.fb.nonNullable.group({ projectName: ['', Validators.required], projectAbstract: ['', [Validators.required, Validators.minLength(20)]], loanDays: [7, [Validators.required, Validators.min(1), Validators.max(365)]], startDate: ['', Validators.required] });
-  protected readonly memberForm = this.fb.nonNullable.group({ name: ['', Validators.required], email: ['', [Validators.required, Validators.email]], phone: ['', [Validators.required, Validators.pattern(/^\\+?[0-9 ()-]{9,}$/)]], role: ['', Validators.required], studentOrIdNo: ['', Validators.required] });
-  protected isNew(): boolean { return this.router.url.includes('/requests/review'); } protected isRequests(): boolean { return this.router.url === '/app/requests'; } protected invalid(field: string): boolean { const c = this.projectForm.controls[field as keyof typeof this.projectForm.controls]; return c.invalid && (c.dirty || c.touched); }
-  protected next(): void { if (this.request.hasItems()) this.currentStep = Math.min(3, this.currentStep + 1); } protected back(): void { this.currentStep = Math.max(0, this.currentStep - 1); }
-  protected saveProject(): void { this.projectForm.markAllAsTouched(); if (this.projectForm.invalid) return; this.request.updateProject(this.projectForm.getRawValue()); this.next(); }
-  protected addMember(): void { this.memberForm.markAllAsTouched(); if (this.memberForm.invalid) return; const member = this.memberForm.getRawValue(); this.request.addTeamMember({ fullName: member.name, name: member.name, email: member.email, phoneNumber: member.phone, roleInProject: member.role, role: member.role, studentOrIdNo: member.studentOrIdNo }); this.memberForm.reset(); }
-  protected removeMember(index: number): void { this.request.removeTeamMember(index); }
-  protected submit(): void { const draft = this.request.draft(); if (!draft.items.length || this.request.submission().status === 'SUBMITTING') return; this.request.beginSubmission(); this.requestService.create({ projectName: draft.projectName, projectAbstract: draft.projectAbstract, loanDays: draft.loanDays, startDate: draft.startDate, items: draft.items.map(item => ({ assetId: item.assetId, quantity: item.quantity })), teamMembers: draft.teamMembers.map(member => ({ fullName: member.fullName, email: member.email, phoneNumber: member.phoneNumber, studentOrIdNo: member.studentOrIdNo, roleInProject: member.roleInProject })) }).subscribe({ next: created => { this.request.completeSubmission(created.id); this.request.clearItems(); this.router.navigateByUrl('/app/requests/submitted'); }, error: () => this.request.failSubmission('Unable to submit the request. Please review stock and try again.') }); }
+  protected readonly request = inject(RequestStore);
+  private readonly requestService = inject(RequestService);
+  private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+
+  protected readonly stepNames = ['Project', 'Team', 'Review'];
+  protected readonly step = signal<Step>(0);
+  protected readonly today = new Date().toISOString().slice(0, 10);
+  protected readonly members = computed(() => this.request.draft().teamMembers);
+  protected readonly submitting = computed(() => this.request.submission().status === 'SUBMITTING');
+  protected readonly submitError = computed(() => this.request.submission().status === 'ERROR' ? this.request.submission().error : null);
+
+  protected readonly projectForm = this.fb.nonNullable.group({
+    projectName: ['', [Validators.required, Validators.maxLength(120)]],
+    projectAbstract: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(2000)]],
+    loanDays: [7, [Validators.required, Validators.min(1), Validators.max(365)]],
+    startDate: ['', Validators.required]
+  });
+
+  protected readonly memberForm = this.fb.nonNullable.group({
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', [Validators.required, Validators.pattern(/^\+?[0-9 ()-]{9,}$/)]],
+    studentOrIdNo: ['', Validators.required],
+    role: ['', Validators.required]
+  });
+
+  constructor() {
+    const draft = this.request.draft();
+    if (draft.projectName) {
+      this.projectForm.patchValue({
+        projectName: draft.projectName,
+        projectAbstract: draft.projectAbstract,
+        loanDays: draft.loanDays,
+        startDate: draft.startDate
+      });
+    }
+  }
+
+  protected invalid(form: 'project' | 'member', field: string): boolean {
+    const group: FormGroup = form === 'project' ? this.projectForm : this.memberForm;
+    const control = group.get(field);
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  protected goTo(step: Step): void {
+    if (step < this.step()) this.step.set(step);
+  }
+
+  protected back(): void {
+    this.step.set(Math.max(0, this.step() - 1) as Step);
+  }
+
+  protected saveProject(): void {
+    this.projectForm.markAllAsTouched();
+    if (this.projectForm.invalid) return;
+    this.request.updateProject(this.projectForm.getRawValue());
+    this.step.set(1);
+  }
+
+  protected addMember(): void {
+    this.memberForm.markAllAsTouched();
+    if (this.memberForm.invalid) return;
+    const member = this.memberForm.getRawValue();
+    this.request.addTeamMember({
+      fullName: member.name,
+      name: member.name,
+      email: member.email,
+      phoneNumber: member.phone,
+      roleInProject: member.role,
+      role: member.role,
+      studentOrIdNo: member.studentOrIdNo
+    });
+    this.memberForm.reset();
+  }
+
+  protected removeMember(index: number): void {
+    this.request.removeTeamMember(index);
+  }
+
+  protected toReview(): void {
+    this.step.set(2);
+  }
+
+  protected submit(): void {
+    const draft = this.request.draft();
+    if (!draft.items.length || this.submitting()) return;
+    this.request.beginSubmission();
+    this.requestService
+      .create({
+        projectName: draft.projectName,
+        projectAbstract: draft.projectAbstract,
+        loanDays: draft.loanDays,
+        startDate: draft.startDate,
+        items: draft.items.map(item => ({ assetId: item.assetId, quantity: item.quantity })),
+        teamMembers: draft.teamMembers.map(member => ({
+          fullName: member.fullName,
+          email: member.email,
+          phoneNumber: member.phoneNumber,
+          studentOrIdNo: member.studentOrIdNo,
+          roleInProject: member.roleInProject
+        }))
+      })
+      .subscribe({
+        next: created => {
+          this.request.completeSubmission(created.id);
+          this.request.clearItems();
+          void this.router.navigateByUrl('/app/requests/submitted');
+        },
+        error: () => this.request.failSubmission('We couldn’t submit your request. Check that the equipment is still in stock, then try again.')
+      });
+  }
 }

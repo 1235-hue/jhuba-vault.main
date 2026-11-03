@@ -1,0 +1,10 @@
+.item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--line-soft); }
+.item:last-child { border-bottom: 0; }
+.item-main { flex: 1; min-width: 0; }
+.item-main .cell-title:hover { color: var(--navy); }
+.item-main .cell-sub { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.summary { display: grid; gap: 16px; padding: 20px; }
+.sum > div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.sum dt { color: var(--text-3); }
+.sum dd { color: var(--ink); font-weight: 700; }
+@media (max-width: 520px) { .item { flex-wrap: wrap; } .item-main { flex-basis: 100%; } .qty { margin-right: auto; } }

@@ -1,20 +1,29 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RequestStore } from '../state/request.store';
+import { ConfirmService } from '../core/confirm.service';
+import { EmptyStateComponent } from '../shared/empty-state.component';
+import { PageHeaderComponent } from '../shared/page-header.component';
 
 @Component({
   selector: 'jhub-request-cart-page',
   standalone: true,
-  styleUrls: ['./innovator-theme.component.css'],
-  imports: [RouterLink],
+  imports: [RouterLink, EmptyStateComponent, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <main class="cart-page page-width">
-      <a class="back-link" routerLink="/catalogue">← Continue browsing</a>
-      <div class="heading"><div><p class="eyebrow">REQUEST CART</p><h1>Review your <em>components.</em></h1><p>Adjust quantities before adding project information.</p></div><button class="clear-button" type="button" [disabled]="!request.hasItems()" (click)="request.clearItems()">Clear cart</button></div>
-      @if (!request.hasItems()) {<section class="empty-state"><strong>Your request cart is empty.</strong><span>Browse the catalogue and add the assets your project needs.</span><a class="primary-button" routerLink="/catalogue">Browse assets <span>→</span></a></section>} @else {<section class="cart-list">@for (item of request.draft().items; track item.assetId) {<article class="cart-item"><div><strong>{{ item.asset.name }}</strong><small>{{ item.asset.assetTag }} · {{ item.asset.availableQty }} available</small></div><div class="quantity-control"><button type="button" aria-label="Decrease quantity" [disabled]="item.quantity <= 1" (click)="request.setQuantity(item.assetId, item.quantity - 1)">−</button><output aria-label="Requested quantity">{{ item.quantity }}</output><button type="button" aria-label="Increase quantity" [disabled]="item.quantity >= item.asset.availableQty" (click)="request.setQuantity(item.assetId, item.quantity + 1)">+</button></div><button class="remove-button" type="button" (click)="request.removeAsset(item.assetId)">Remove</button></article>}</section><div class="cart-footer"><span>{{ request.itemCount() }} requested unit{{ request.itemCount() === 1 ? '' : 's' }}</span><a class="primary-button" routerLink="/app/requests/review">Continue to review <span>→</span></a></div>}
-    </main>
-  `,
-  styles: [`:host{display:block}.page-width{width:min(960px,calc(100% - 48px));margin:auto}.cart-page{padding:58px 0 110px}.back-link{color:#667083;text-decoration:none;font-size:12px}.heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:35px 0}.eyebrow{color:#3ea945;font-size:10px;font-weight:800;letter-spacing:2px;margin:0 0 16px}.heading h1{font:400 clamp(42px,5vw,60px)/1.05 Georgia,serif;color:#262571;margin:0}.heading h1 em{color:#3ea945}.heading p:last-child{color:#667083;font-size:13px}.clear-button,.remove-button{border:0;background:transparent;color:#e6292a;font-size:11px;font-weight:700}.clear-button:disabled{opacity:.45}.cart-list{background:#fff;border:1px solid #e6e8ee}.cart-item{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:25px;padding:20px 24px;border-bottom:1px solid #edf0f4}.cart-item:last-child{border-bottom:0}.cart-item strong,.cart-item small{display:block}.cart-item strong{color:#262571;font:18px Georgia,serif}.cart-item small{color:#7c8492;font-size:10px;margin-top:6px}.quantity-control{display:flex;align-items:center;border:1px solid #dce0e8}.quantity-control button{width:34px;height:32px;border:0;background:#f6f7fa;color:#262571;font-size:18px}.quantity-control button:disabled{opacity:.35}.quantity-control output{width:34px;text-align:center;font-size:12px}.empty-state{display:flex;flex-direction:column;align-items:flex-start;gap:12px;background:#fff;border:1px solid #e6e8ee;padding:35px;color:#667083;font-size:12px}.empty-state strong{font:25px Georgia,serif;color:#262571}.primary-button{display:inline-flex;align-items:center;gap:20px;background:#262571;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;font-weight:700}.cart-footer{display:flex;justify-content:space-between;align-items:center;padding-top:22px;color:#667083;font-size:12px}@media(max-width:650px){.heading{display:block}.clear-button{margin-top:20px}.cart-item{grid-template-columns:1fr auto}.remove-button{grid-column:1/-1;text-align:left}.cart-footer{display:block}.cart-footer .primary-button{margin-top:15px;width:100%;justify-content:space-between}}`]
+  templateUrl: './request-cart-page.component.html',
+  styleUrl: './request-cart-page.component.css'
 })
-export class RequestCartPageComponent { protected readonly request = inject(RequestStore); }
+export class RequestCartPageComponent {
+  protected readonly request = inject(RequestStore);
+  private readonly confirm = inject(ConfirmService);
+
+  protected async clear(): Promise<void> {
+    const result = await this.confirm.ask({
+      title: 'Clear your request cart?',
+      message: 'All selected equipment will be removed. You can add it again from the catalogue.',
+      confirmLabel: 'Clear cart',
+      tone: 'danger'
+    });
+    if (result.confirmed) this.request.clearItems();
+  }
+}

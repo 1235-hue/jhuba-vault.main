@@ -1,0 +1,115 @@
+<jhub-page-header title="Inventory" subtitle="Stock levels and value across every asset in the Vault.">
+  <button type="button" class="btn btn-primary" (click)="openCreate()"><i class="pi pi-plus" aria-hidden="true"></i> Add item</button>
+</jhub-page-header>
+
+<div class="stack" style="--gap: 20px">
+  @if (store.error()) {
+    <div class="alert alert-danger" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ store.error() }}</div><button type="button" class="alert-action btn btn-sm btn-danger-soft" (click)="store.load()">Try again</button></div>
+  }
+
+  <section class="stat-grid" aria-label="Inventory summary">
+    <div class="stat"><div class="stat-top">Total units <span class="stat-icon"><i class="pi pi-database" aria-hidden="true"></i></span></div><div class="stat-value">{{ totalUnits() }}</div></div>
+    <div class="stat"><div class="stat-top">Units available <span class="stat-icon is-green"><i class="pi pi-check-circle" aria-hidden="true"></i></span></div><div class="stat-value">{{ availableUnits() }}</div></div>
+    <div class="stat"><div class="stat-top">Low stock <span class="stat-icon is-amber"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i></span></div><div class="stat-value">{{ lowStockCount() }}</div><div class="stat-note">A quarter or less remaining</div></div>
+    <div class="stat"><div class="stat-top">Out of stock <span class="stat-icon is-red"><i class="pi pi-ban" aria-hidden="true"></i></span></div><div class="stat-value">{{ outOfStockCount() }}</div><div class="stat-note">Assets with none available</div></div>
+  </section>
+
+  <section class="card" aria-labelledby="items-title">
+    <div class="card-head"><div><h2 class="card-title" id="items-title">Inventory items</h2><p class="card-sub">{{ filteredAssets().length }} of {{ store.assets().length }} items</p></div></div>
+
+    <div class="bar">
+      <div class="toolbar">
+        <div class="input-icon grow">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <input class="input" type="search" aria-label="Search inventory" placeholder="Search by name, SKU or category" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+        </div>
+        <select class="select stock-select" aria-label="Filter by stock" [ngModel]="stockFilter()" (ngModelChange)="stockFilter.set($event)">
+          <option value="ALL">All stock levels</option><option value="IN_STOCK">In stock</option><option value="LOW_STOCK">Low stock</option><option value="OUT_OF_STOCK">Out of stock</option>
+        </select>
+      </div>
+      <div class="chips" role="group" aria-label="Category">
+        <button type="button" class="chip" [attr.aria-pressed]="selectedCategory() === null" (click)="selectCategory(null)">All <span class="count">{{ store.assets().length }}</span></button>
+        @for (category of categories; track category.value) {
+          <button type="button" class="chip" [attr.aria-pressed]="selectedCategory() === category.value" (click)="selectCategory(category.value)">
+            <i class="pi" [class]="'pi ' + category.icon" aria-hidden="true"></i> {{ category.label }} <span class="count">{{ categoryCount(category.value) }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (store.loading() && !store.assets().length) {
+      <div class="loading-state" role="status"><span class="spinner"></span> Loading inventory…</div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Item</th><th>SKU</th><th>Category</th><th class="num">Available</th><th class="num">Unit price</th><th class="num">Total value</th><th>Status</th><th class="actions">Actions</th></tr></thead>
+          <tbody>
+            @for (asset of filteredAssets(); track asset.id) {
+              <tr>
+                <td>
+                  <div class="person">
+                    <span class="thumb">@if (asset.imageUrl) { <img [src]="asset.imageUrl" [alt]="asset.name" /> } @else { <i class="pi" [class]="'pi ' + categoryIcon(asset.category)" aria-hidden="true"></i> }</span>
+                    <span class="item-copy"><span class="cell-title">{{ asset.name }}</span></span>
+                  </div>
+                </td>
+                <td><span class="tag">{{ asset.assetTag }}</span></td>
+                <td>{{ categoryLabel(asset.category) }}</td>
+                <td class="num"><strong>{{ asset.availableQty }}</strong> <span class="muted">/ {{ asset.totalQuantity }}</span></td>
+                <td class="num nowrap">{{ formatPrice(asset.price) }}</td>
+                <td class="num nowrap">{{ formatPrice(assetValue(asset)) }}</td>
+                <td><span class="badge" [class.badge-success]="stockStatus(asset) === 'In stock'" [class.badge-warning]="stockStatus(asset) === 'Low stock'" [class.badge-danger]="stockStatus(asset) === 'Out of stock'">{{ stockStatus(asset) }}</span></td>
+                <td class="actions">
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="view(asset)">View</button>
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="edit(asset)">Edit</button>
+                  <button type="button" class="btn btn-sm btn-ghost btn-icon" [attr.aria-label]="'Delete ' + asset.name" (click)="deleteAsset(asset)"><i class="pi pi-trash" aria-hidden="true"></i></button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8">
+                <jhub-empty icon="pi-search" [title]="store.assets().length ? 'No items match your filters' : 'No inventory yet'" [text]="store.assets().length ? 'Try a different search, category or stock level.' : 'Add your first item to start tracking stock.'">
+                  @if (store.assets().length) { <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear filters</button> } @else { <button type="button" class="btn btn-primary" (click)="openCreate()">Add item</button> }
+                </jhub-empty>
+              </td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+
+@if (dialogMode()) {
+  @if (dialogMode() === 'view' && selectedAsset(); as asset) {
+    <jhub-modal [title]="asset.name" [subtitle]="asset.assetTag" (closed)="closeDialog()">
+      <p class="detail-desc">{{ asset.description }}</p>
+      <dl class="facts">
+        <div><dt>Category</dt><dd>{{ categoryLabel(asset.category) }}</dd></div>
+        <div><dt>Available</dt><dd>{{ asset.availableQty }} of {{ asset.totalQuantity }}</dd></div>
+        <div><dt>Status</dt><dd>{{ stockStatus(asset) }}</dd></div>
+        <div><dt>Unit price</dt><dd>{{ formatPrice(asset.price) }}</dd></div>
+        <div><dt>Total value</dt><dd>{{ formatPrice(assetValue(asset)) }}</dd></div>
+      </dl>
+      <footer class="modal-foot" modal-footer>
+        <button type="button" class="btn btn-secondary" (click)="closeDialog()">Close</button>
+        <button type="button" class="btn btn-primary" (click)="edit(asset)">Edit item</button>
+      </footer>
+    </jhub-modal>
+  } @else {
+    <jhub-modal [title]="editingId() ? 'Edit inventory item' : 'Add inventory item'" size="lg" [busy]="saving()" (closed)="closeDialog()">
+      <form id="item-form" class="form-grid" (ngSubmit)="saveAsset()">
+        <div class="field"><label for="i-name">Item name</label><input id="i-name" class="input" name="name" [(ngModel)]="form.name" required maxlength="120" /></div>
+        <div class="field"><label for="i-sku">SKU</label><input id="i-sku" class="input" name="assetTag" [(ngModel)]="form.assetTag" required maxlength="64" placeholder="e.g. JHUB-IOT-014" /></div>
+        <div class="field"><label for="i-cat">Category</label><select id="i-cat" class="select" name="category" [(ngModel)]="form.category" required>@for (category of categories; track category.value) { <option [ngValue]="category.value">{{ category.label }}</option> }</select></div>
+        <div class="field"><label for="i-price">Unit price (KSh)</label><input id="i-price" class="input" name="price" type="number" min="0" step="0.01" [(ngModel)]="form.price" required /></div>
+        <div class="field"><label for="i-total">Total quantity</label><input id="i-total" class="input" name="totalQuantity" type="number" min="1" step="1" [(ngModel)]="form.totalQuantity" required /></div>
+        <div class="field"><label for="i-avail">Available quantity</label><input id="i-avail" class="input" name="availableQty" type="number" min="0" [max]="form.totalQuantity" step="1" [(ngModel)]="form.availableQty" required /></div>
+        <div class="field full"><label for="i-desc">Description</label><textarea id="i-desc" class="textarea" name="description" rows="3" [(ngModel)]="form.description" required maxlength="500"></textarea></div>
+        @if (formError()) { <div class="alert alert-danger full" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ formError() }}</div></div> }
+      </form>
+      <footer class="modal-foot" modal-footer>
+        <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="closeDialog()">Cancel</button>
+        <button type="submit" form="item-form" class="btn btn-primary" [class.is-loading]="saving()" [disabled]="saving()">{{ editingId() ? 'Save changes' : 'Add item' }}</button>
+      </footer>
+    </jhub-modal>
+  }
+}

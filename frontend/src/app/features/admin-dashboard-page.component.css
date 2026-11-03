@@ -1,0 +1,27 @@
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--text-2); font-size: var(--fs-sm); font-weight: 600; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; }
+.chart { width: 100%; height: auto; }
+.grid-line { stroke: var(--line); stroke-dasharray: 3 4; }
+.axis { fill: var(--text-3); font-size: 11px; font-family: var(--font); }
+.chart-note { margin-top: 4px; text-align: center; }
+.category { display: grid; justify-items: center; gap: 22px; }
+.donut { position: relative; display: grid; place-items: center; width: 148px; height: 148px; border-radius: 50%; }
+.donut::before { content: ''; position: absolute; inset: 22px; border-radius: 50%; background: var(--surface); }
+.donut span { position: relative; display: grid; justify-items: center; line-height: 1.1; }
+.donut strong { color: var(--ink); font-size: var(--fs-2xl); font-weight: 800; }
+.donut small { color: var(--text-3); font-size: var(--fs-xs); }
+.cat-legend { display: grid; gap: 10px; width: 100%; }
+.cat-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 40px; align-items: center; gap: 10px; font-size: var(--fs-sm); }
+.cat-legend i { width: 10px; height: 10px; border-radius: 3px; }
+.cat-legend span { overflow: hidden; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+.cat-legend strong { color: var(--ink); }
+.cat-legend small { color: var(--text-3); text-align: right; }
+.activity { display: grid; gap: 0; padding: 8px 20px; }
+.activity li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.activity li:last-child { border-bottom: 0; }
+.activity-icon { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: var(--r-md); background: var(--navy-50); color: var(--navy); font-size: 0.8rem; }
+.activity strong, .activity small { display: block; }
+.activity strong { color: var(--ink); font-weight: 600; }
+.activity small { color: var(--text-3); font-size: var(--fs-xs); }
+

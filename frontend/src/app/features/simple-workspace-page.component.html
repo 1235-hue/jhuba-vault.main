@@ -1,0 +1,28 @@
+@if (kind === 'team') {
+  <jhub-page-header title="My team" subtitle="People added to your current request draft." />
+  <section class="card">
+    @if (request.draft().teamMembers.length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>ID number</th></tr></thead>
+          <tbody>
+            @for (member of request.draft().teamMembers; track member.email) {
+              <tr><td><span class="cell-title">{{ member.fullName }}</span></td><td>{{ member.roleInProject }}</td><td>{{ member.email }}</td><td>{{ member.studentOrIdNo || '—' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <jhub-empty icon="pi-users" title="No team members yet" text="Add the people responsible for your project while you create a request.">
+        <a class="btn btn-primary" routerLink="/catalogue">Start a request</a>
+      </jhub-empty>
+    }
+  </section>
+} @else {
+  <jhub-page-header title="Settings" subtitle="Manage the details tied to your account." />
+  <section class="card">
+    <jhub-empty icon="pi-user" title="Your details live in your profile" text="Update your name, phone number, bio and photo from your profile page.">
+      <a class="btn btn-primary" routerLink="/app/profile">Open profile</a>
+    </jhub-empty>
+  </section>
+}

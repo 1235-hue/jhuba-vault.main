@@ -1,0 +1,28 @@
+<div class="done">
+  <span class="mark" aria-hidden="true"><i class="pi pi-check"></i></span>
+  <h1>Request submitted</h1>
+  <p class="lead">An administrator will review your request. You will see its status change in My requests as it moves forward.</p>
+
+  <section class="card summary" aria-label="Request summary">
+    <dl class="facts">
+      <div><dt>Reference</dt><dd>{{ request.submission().requestId | reqRef }}</dd></div>
+      <div><dt>Project</dt><dd>{{ request.draft().projectName || 'Your project' }}</dd></div>
+      <div><dt>Status</dt><dd><jhub-status [status]="RequestStatus.PENDING" /></dd></div>
+    </dl>
+  </section>
+
+  <section class="card next">
+    <h2 class="card-title">What happens next</h2>
+    <ol class="timeline">
+      <li class="is-done"><strong>You submitted the request</strong><small>Equipment is held while it is reviewed.</small></li>
+      <li class="is-current"><strong>An administrator reviews it</strong><small>You will see it as Approved or Rejected, with a reason if rejected.</small></li>
+      <li><strong>Collect the equipment</strong><small>Once approved, it is checked out to you at the Vault.</small></li>
+      <li><strong>Return it on time</strong><small>Return by the expected date shown on your request.</small></li>
+    </ol>
+  </section>
+
+  <div class="actions">
+    <a class="btn btn-primary btn-lg" routerLink="/app/requests">View my requests</a>
+    <a class="btn btn-secondary btn-lg" routerLink="/catalogue">Browse more assets</a>
+  </div>
+</div>

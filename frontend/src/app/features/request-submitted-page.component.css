@@ -1,0 +1,7 @@
+.done { display: grid; gap: 20px; max-width: 680px; margin: 24px auto 0; }
+.mark { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--green-50); color: var(--green-700); font-size: 1.5rem; box-shadow: 0 0 0 8px rgb(62 169 69 / 0.1); }
+h1 { font-size: var(--fs-3xl); font-weight: 800; letter-spacing: -0.025em; }
+.lead { margin-top: -8px; color: var(--text-2); font-size: var(--fs-md); line-height: 1.65; }
+.summary { padding: 20px; }
+.next { display: grid; gap: 20px; padding: 22px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }

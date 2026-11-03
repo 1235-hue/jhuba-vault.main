@@ -1,0 +1,8 @@
+.banner { margin-bottom: 20px; }
+.reason { margin-top: 8px; }
+.abstract { color: var(--text-2); font-size: var(--fs-md); line-height: 1.65; white-space: pre-line; }
+.member { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
+.member:last-child { border-bottom: 0; }
+.member-mail { margin-left: auto; min-width: 0; overflow: hidden; font-size: var(--fs-sm); text-overflow: ellipsis; }
+.facts.one { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (max-width: 560px) { .member { flex-wrap: wrap; } .member-mail { margin-left: 50px; flex-basis: 100%; } }

@@ -1,0 +1,4 @@
+.bar { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.role-select { width: 180px; }
+.page-of { min-width: 56px; color: var(--text-2); font-weight: 600; text-align: center; }
+@media (max-width: 640px) { .role-select { width: 100%; } }

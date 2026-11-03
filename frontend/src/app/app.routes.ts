@@ -1,12 +1,14 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/guards';
 import { Role } from './core/models';
+import { LandingPageComponent } from './features/landing-page.component';
 import { AuthPageComponent } from './features/auth-page.component';
 import { CataloguePageComponent } from './features/catalogue-page.component';
 import { AssetDetailsPageComponent } from './features/asset-details-page.component';
 import { ProfilePageComponent } from './features/profile-page.component';
 import { WorkspacePageComponent } from './features/workspace-page.component';
-import { AdminPageComponent } from './features/admin-page.component';
+import { AdminAssetsPageComponent } from './features/admin-assets-page.component';
+import { AdminAuditPageComponent } from './features/admin-audit-page.component';
 import { RequestDetailsPageComponent } from './features/request-details-page.component';
 import { SimpleWorkspacePageComponent } from './features/simple-workspace-page.component';
 import { RequestSubmittedPageComponent } from './features/request-submitted-page.component';
@@ -20,6 +22,8 @@ import { AdminInventoryPageComponent } from './features/admin-inventory-page.com
 import { AdminSettingsPageComponent } from './features/admin-settings-page.component';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', component: LandingPageComponent, title: 'JHUB Africa Vault' },
+  { path: 'landing', redirectTo: '', pathMatch: 'full' },
   { path: 'auth/login', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'auth/register', component: AuthPageComponent, canActivate: [guestGuard] },
   { path: 'admin/login', component: AuthPageComponent, canActivate: [guestGuard] },
@@ -33,16 +37,16 @@ export const routes: Routes = [
   { path: 'app/requests/review', component: WorkspacePageComponent, canActivate: [authGuard] },
   { path: 'app/requests/submitted', component: RequestSubmittedPageComponent, canActivate: [authGuard] },
   { path: 'app/requests/:id', component: RequestDetailsPageComponent, canActivate: [authGuard] },
-  { path: 'app/loans', component: RequestHistoryPageComponent, canActivate: [authGuard] },
+  { path: 'app/loans', component: RequestHistoryPageComponent, data: { view: 'loans' }, canActivate: [authGuard] },
   { path: 'app/profile', component: ProfilePageComponent, canActivate: [authGuard] },
   { path: 'app/team', component: SimpleWorkspacePageComponent, canActivate: [authGuard] },
   { path: 'app/settings', component: SimpleWorkspacePageComponent, canActivate: [authGuard] },
   { path: 'admin/dashboard', component: AdminDashboardPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'admin/requests', component: AdminRequestsPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
-  { path: 'admin/assets', component: AdminPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
+  { path: 'admin/assets', component: AdminAssetsPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'admin/inventory', component: AdminInventoryPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'admin/users', component: AdminUsersPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
-  { path: 'admin/audit-log', component: AdminPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
+  { path: 'admin/audit-log', component: AdminAuditPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: 'admin/settings', component: AdminSettingsPageComponent, canActivate: [authGuard, roleGuard(Role.ADMIN)] },
   { path: '**', redirectTo: '' }
 ];

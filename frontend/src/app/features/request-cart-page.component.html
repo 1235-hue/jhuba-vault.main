@@ -1,0 +1,46 @@
+<jhub-page-header
+  title="Request cart"
+  subtitle="Check the equipment and quantities, then continue to add your project details."
+  [crumbs]="[{ label: 'Catalogue', link: '/catalogue' }, { label: 'Request cart' }]"
+>
+  @if (request.hasItems()) { <button type="button" class="btn btn-ghost" (click)="clear()"><i class="pi pi-trash" aria-hidden="true"></i> Clear cart</button> }
+</jhub-page-header>
+
+@if (!request.hasItems()) {
+  <div class="card">
+    <jhub-empty icon="pi-shopping-cart" title="Your request cart is empty" text="Add the equipment your project needs from the catalogue.">
+      <a class="btn btn-primary" routerLink="/catalogue">Browse the catalogue</a>
+    </jhub-empty>
+  </div>
+} @else {
+  <div class="split">
+    <section class="card" aria-label="Selected equipment">
+      <ul>
+        @for (item of request.draft().items; track item.assetId) {
+          <li class="item">
+            <div class="item-main">
+              <a class="cell-title" [routerLink]="['/assets', item.assetId]">{{ item.asset.name }}</a>
+              <span class="cell-sub"><span class="tag">{{ item.asset.assetTag }}</span> {{ item.asset.availableQty }} available</span>
+            </div>
+            <div class="qty" role="group" [attr.aria-label]="'Quantity of ' + item.asset.name">
+              <button type="button" aria-label="Decrease quantity" [disabled]="item.quantity <= 1" (click)="request.setQuantity(item.assetId, item.quantity - 1)"><i class="pi pi-minus" aria-hidden="true"></i></button>
+              <output aria-live="polite">{{ item.quantity }}</output>
+              <button type="button" aria-label="Increase quantity" [disabled]="item.quantity >= item.asset.availableQty" (click)="request.setQuantity(item.assetId, item.quantity + 1)"><i class="pi pi-plus" aria-hidden="true"></i></button>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="'Remove ' + item.asset.name" (click)="request.removeAsset(item.assetId)"><i class="pi pi-trash" aria-hidden="true"></i></button>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <aside class="card summary">
+      <h2 class="card-title">Summary</h2>
+      <dl class="sum">
+        <div><dt>Assets</dt><dd>{{ request.draft().items.length }}</dd></div>
+        <div><dt>Total units</dt><dd>{{ request.itemCount() }}</dd></div>
+      </dl>
+      <a class="btn btn-primary btn-lg btn-block" routerLink="/app/requests/review">Continue to project details</a>
+      <a class="btn btn-ghost btn-block" routerLink="/catalogue">Add more equipment</a>
+    </aside>
+  </div>
+}

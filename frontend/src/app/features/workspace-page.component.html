@@ -1,0 +1,162 @@
+<jhub-page-header
+  title="New request"
+  subtitle="Tell the Vault what you are building and who is responsible for the equipment."
+  [crumbs]="[{ label: 'Request cart', link: '/app/cart' }, { label: 'New request' }]"
+/>
+
+@if (!request.hasItems()) {
+  <div class="card">
+    <jhub-empty icon="pi-shopping-cart" title="Choose equipment first" text="Your request cart is empty. Add the assets your project needs, then come back to finish the request.">
+      <a class="btn btn-primary" routerLink="/catalogue">Browse the catalogue</a>
+    </jhub-empty>
+  </div>
+} @else {
+  <div class="wizard">
+    <ol class="stepper" aria-label="Request progress">
+      @for (name of stepNames; track name; let index = $index) {
+        <li class="step" [class.is-done]="step() > index" [class.is-current]="step() === index" [attr.aria-current]="step() === index ? 'step' : null">
+          <span class="step-dot">@if (step() > index) { <i class="pi pi-check" aria-hidden="true"></i> } @else { {{ index + 1 }} }</span>
+          <span class="step-label">{{ name }}</span>
+        </li>
+      }
+    </ol>
+
+    <div class="split">
+      <div>
+        @if (step() === 0) {
+          <form class="card panel" [formGroup]="projectForm" (ngSubmit)="saveProject()" novalidate>
+            <div><h2 class="section-title">Project details</h2><p class="muted">Administrators use this to decide whether to approve the loan.</p></div>
+
+            <div class="form-grid">
+              <div class="field full">
+                <label for="projectName">Project name</label>
+                <input id="projectName" class="input" formControlName="projectName" maxlength="120" placeholder="e.g. AgriSense soil monitor" />
+                @if (invalid('project', 'projectName')) { <span class="field-error">Give your project a name.</span> }
+              </div>
+
+              <div class="field full">
+                <label for="projectAbstract">What are you building?</label>
+                <textarea id="projectAbstract" class="textarea" rows="5" formControlName="projectAbstract" maxlength="2000" placeholder="Describe the project, who it is for and how you will use the equipment."></textarea>
+                @if (invalid('project', 'projectAbstract')) {
+                  <span class="field-error">Describe the project in at least 20 characters.</span>
+                } @else {
+                  <span class="hint">{{ projectForm.controls.projectAbstract.value.length }} / 2000 characters</span>
+                }
+              </div>
+
+              <div class="field">
+                <label for="startDate">Start date</label>
+                <input id="startDate" class="input" type="date" formControlName="startDate" [min]="today" />
+                @if (invalid('project', 'startDate')) { <span class="field-error">Choose when you need the equipment.</span> }
+              </div>
+
+              <div class="field">
+                <label for="loanDays">Loan period (days)</label>
+                <input id="loanDays" class="input" type="number" min="1" max="365" formControlName="loanDays" />
+                @if (invalid('project', 'loanDays')) { <span class="field-error">Enter between 1 and 365 days.</span> }
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <a class="btn btn-secondary" routerLink="/app/cart">Back to cart</a>
+              <button type="submit" class="btn btn-primary">Continue to team</button>
+            </div>
+          </form>
+        } @else if (step() === 1) {
+          <section class="card panel">
+            <div><h2 class="section-title">Team members</h2><p class="muted">Add the people who share responsibility for the equipment. This step is optional.</p></div>
+
+            @if (members().length) {
+              <ul class="members">
+                @for (member of members(); track $index) {
+                  <li>
+                    <div>
+                      <span class="cell-title">{{ member.fullName }}</span>
+                      <span class="cell-sub">{{ member.roleInProject }} · {{ member.studentOrIdNo }} · {{ member.email }}</span>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="'Remove ' + member.fullName" (click)="removeMember($index)"><i class="pi pi-trash" aria-hidden="true"></i></button>
+                  </li>
+                }
+              </ul>
+            }
+
+            <form class="member-form" [formGroup]="memberForm" (ngSubmit)="addMember()" novalidate>
+              <h3 class="sub-title">Add a team member</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="m-name">Full name</label>
+                  <input id="m-name" class="input" formControlName="name" autocomplete="off" />
+                  @if (invalid('member', 'name')) { <span class="field-error">Enter their full name.</span> }
+                </div>
+                <div class="field">
+                  <label for="m-role">Role in the project</label>
+                  <input id="m-role" class="input" formControlName="role" placeholder="e.g. Hardware lead" />
+                  @if (invalid('member', 'role')) { <span class="field-error">Enter their role.</span> }
+                </div>
+                <div class="field">
+                  <label for="m-email">Email address</label>
+                  <input id="m-email" class="input" type="email" formControlName="email" autocomplete="off" />
+                  @if (invalid('member', 'email')) { <span class="field-error">Enter a valid email address.</span> }
+                </div>
+                <div class="field">
+                  <label for="m-phone">Phone number</label>
+                  <input id="m-phone" class="input" type="tel" formControlName="phone" placeholder="+254 712 345 678" autocomplete="off" />
+                  @if (invalid('member', 'phone')) { <span class="field-error">Enter a valid phone number.</span> }
+                </div>
+                <div class="field full">
+                  <label for="m-id">ID or student number</label>
+                  <input id="m-id" class="input" formControlName="studentOrIdNo" autocomplete="off" />
+                  @if (invalid('member', 'studentOrIdNo')) { <span class="field-error">Enter their ID or student number.</span> }
+                </div>
+              </div>
+              <button type="submit" class="btn btn-secondary"><i class="pi pi-plus" aria-hidden="true"></i> Add team member</button>
+            </form>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" (click)="back()">Back</button>
+              <button type="button" class="btn btn-primary" (click)="toReview()">{{ members().length ? 'Review request' : 'Skip and review' }}</button>
+            </div>
+          </section>
+        } @else {
+          <section class="card panel">
+            <div><h2 class="section-title">Review and submit</h2><p class="muted">Check everything below. You can’t edit the request after it is submitted.</p></div>
+
+            @if (submitError()) {
+              <div class="alert alert-danger" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ submitError() }}</div></div>
+            }
+
+            <dl class="review">
+              <div><dt>Project</dt><dd><strong>{{ request.draft().projectName }}</strong><p>{{ request.draft().projectAbstract }}</p></dd></div>
+              <div><dt>Dates</dt><dd>{{ request.draft().startDate | date: 'd MMM y' }} for {{ request.draft().loanDays }} {{ request.draft().loanDays === 1 ? 'day' : 'days' }}<br /><span class="muted">Expected return {{ request.expectedReturn() | date: 'd MMM y' }}</span></dd></div>
+              <div>
+                <dt>Equipment</dt>
+                <dd>@for (item of request.draft().items; track item.assetId) { <span class="line">{{ item.asset.name }} <strong>× {{ item.quantity }}</strong></span> }</dd>
+              </div>
+              <div>
+                <dt>Team</dt>
+                <dd>
+                  @for (member of members(); track $index) { <span class="line">{{ member.fullName }} <span class="muted">· {{ member.roleInProject }}</span></span> }
+                  @empty { <span class="muted">No team members added</span> }
+                </dd>
+              </div>
+            </dl>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" [disabled]="submitting()" (click)="back()">Back</button>
+              <button type="button" class="btn btn-primary" [class.is-loading]="submitting()" [disabled]="submitting()" (click)="submit()">Submit request</button>
+            </div>
+          </section>
+        }
+      </div>
+
+      <aside class="card side" aria-label="Equipment in this request">
+        <div class="card-head"><h2 class="card-title">Equipment</h2><a class="link" routerLink="/app/cart">Edit</a></div>
+        <ul>
+          @for (item of request.draft().items; track item.assetId) {
+            <li><span>{{ item.asset.name }}<small class="cell-sub">{{ item.asset.assetTag }}</small></span><strong>× {{ item.quantity }}</strong></li>
+          }
+        </ul>
+      </aside>
+    </div>
+  </div>
+}

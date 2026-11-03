@@ -1,0 +1,7 @@
+.bar { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.type-select { width: 190px; }
+.date { width: 158px; }
+.page-of { min-width: 56px; color: var(--text-2); font-weight: 600; text-align: center; }
+.meta-title { margin: 24px 0 8px; font-size: var(--fs-base); }
+.meta { margin: 0; padding: 14px; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); font-size: var(--fs-xs); line-height: 1.6; }
+@media (max-width: 640px) { .type-select, .date { width: 100%; } }

@@ -1,0 +1,92 @@
+<jhub-page-header title="Your profile" subtitle="Keep your details current so project and loan records stay accurate." />
+
+@if (profile.success()) {
+  <div class="alert alert-success notice" role="status"><i class="pi pi-check-circle" aria-hidden="true"></i><div class="alert-body">{{ profile.success() }}</div></div>
+}
+@if (profile.error()) {
+  <div class="alert alert-danger notice" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div class="alert-body">{{ profile.error() }}</div></div>
+}
+
+<div class="layout">
+  <aside class="card identity">
+    <span class="avatar avatar-xl">
+      @if (previewUrl) { <img [src]="previewUrl" alt="Your profile photo" /> } @else { {{ initials() }} }
+    </span>
+    <div>
+      <h2>{{ form.controls.fullName.value || 'Your name' }}</h2>
+      <p class="muted">{{ form.controls.email.value }}</p>
+      <span class="badge badge-info badge-plain role">{{ form.controls.primaryRole.value }}</span>
+    </div>
+
+    <label class="btn btn-secondary upload" [class.is-loading]="uploadingImage" [attr.aria-disabled]="uploadingImage">
+      <i class="pi pi-upload" aria-hidden="true"></i> {{ previewUrl ? 'Change photo' : 'Upload photo' }}
+      <input class="sr-only" type="file" accept="image/jpeg,image/png" [disabled]="uploadingImage" (change)="upload($event)" />
+    </label>
+    <p class="hint">JPG or PNG. Large images are compressed automatically.</p>
+    @if (imageMessage) {
+      <div class="alert" [class.alert-danger]="imageError" [class.alert-success]="!imageError" [attr.role]="imageError ? 'alert' : 'status'">
+        <div class="alert-body">{{ imageMessage }}</div>
+      </div>
+    }
+  </aside>
+
+  <form class="card profile-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <section class="block">
+      <h2 class="section-title">Personal details</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="fullName">Full name</label>
+          <input id="fullName" class="input" formControlName="fullName" autocomplete="name" />
+          @if (invalid('fullName')) { <span class="field-error">Enter your full name.</span> }
+        </div>
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" class="input" type="email" formControlName="email" />
+          <span class="hint">Your email is your sign-in and can’t be changed here.</span>
+        </div>
+        <div class="field">
+          <label for="phone">Phone number</label>
+          <div class="input-group">
+            <span class="addon">+254</span>
+            <input id="phone" class="input" type="tel" formControlName="phoneNumber" maxlength="9" inputmode="numeric" autocomplete="tel-national" placeholder="712345678" />
+          </div>
+          @if (invalid('phoneNumber')) { <span class="field-error">Enter 9 digits starting with 7 or 1, without the leading 0.</span> }
+        </div>
+        <div class="field">
+          <label for="identificationId">ID or student number</label>
+          <input id="identificationId" class="input" formControlName="identificationId" />
+          @if (invalid('identificationId')) { <span class="field-error">Enter your ID or student number.</span> }
+        </div>
+        <div class="field">
+          <label for="department">Department or track <span class="optional">(optional)</span></label>
+          <input id="department" class="input" formControlName="department" />
+        </div>
+        <div class="field">
+          <label for="primaryRole">Role</label>
+          <input id="primaryRole" class="input" formControlName="primaryRole" />
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="section-title">About you</h2>
+      <div class="stack" style="--gap: 18px">
+        <div class="field">
+          <label for="bio">Bio and skills <span class="optional">(optional)</span></label>
+          <textarea id="bio" class="textarea" rows="5" formControlName="bio" maxlength="500" placeholder="Tell the JHUB community what you are working on."></textarea>
+          <span class="hint">{{ form.controls.bio.value.length }} / 500 characters</span>
+        </div>
+        <div class="field">
+          <label for="githubUrl">GitHub or portfolio link <span class="optional">(optional)</span></label>
+          <input id="githubUrl" class="input" type="url" formControlName="githubUrl" placeholder="https://github.com/your-name" />
+          @if (invalid('githubUrl')) { <span class="field-error">Enter a link starting with http:// or https://</span> }
+        </div>
+      </div>
+    </section>
+
+    <footer class="form-actions foot">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Discard changes</button>
+      <button type="submit" class="btn btn-primary" [class.is-loading]="profile.saving()" [disabled]="profile.saving()">Save changes</button>
+    </footer>
+  </form>
+</div>

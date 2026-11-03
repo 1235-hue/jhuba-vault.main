@@ -1,0 +1,18 @@
+.status { display: flex; align-items: center; gap: 16px; }
+.status-icon { display: grid; flex: none; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--line-soft); color: var(--text-3); }
+.status-icon.is-ok { background: var(--green-50); color: var(--green-700); }
+.status-icon.is-bad { background: var(--red-50); color: var(--red-700); }
+.status strong { color: var(--ink); font-size: var(--fs-md); }
+.log { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
+.log:last-child { border-bottom: 0; }
+.log strong { display: block; color: var(--ink); text-transform: capitalize; }
+.log small { color: var(--text-3); font-size: var(--fs-xs); }
+.log time { font-size: var(--fs-xs); white-space: nowrap; }
+.shortcuts a { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); transition: background-color var(--t-fast) var(--ease); }
+.shortcuts a:last-child { border-bottom: 0; }
+.shortcuts a:hover { background: var(--surface-2); }
+.shortcuts span:nth-child(2) { flex: 1; }
+.shortcuts strong, .shortcuts small { display: block; }
+.shortcuts strong { color: var(--ink); }
+.shortcuts small { color: var(--text-3); font-size: var(--fs-xs); }
+.shortcuts > a > .pi { color: var(--text-4); font-size: 0.75rem; }

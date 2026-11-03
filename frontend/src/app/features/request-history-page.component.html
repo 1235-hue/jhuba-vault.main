@@ -1,0 +1,67 @@
+<jhub-page-header
+  [title]="loansView ? 'Active loans' : 'My requests'"
+  [subtitle]="loansView ? 'Equipment currently checked out to you, with return dates.' : 'Track every request from review through to return.'"
+>
+  <a class="btn btn-primary" routerLink="/catalogue"><i class="pi pi-plus" aria-hidden="true"></i> New request</a>
+</jhub-page-header>
+
+<section class="card">
+  @if (loading()) {
+    <div class="loading-state" role="status"><span class="spinner"></span> Loading…</div>
+  } @else if (error()) {
+    <jhub-empty icon="pi-exclamation-circle" tone="danger" [title]="loansView ? 'We couldn’t load your loans' : 'We couldn’t load your requests'" [text]="error()!">
+      <button type="button" class="btn btn-secondary" (click)="load()">Try again</button>
+    </jhub-empty>
+  } @else if (!scoped().length) {
+    @if (loansView) {
+      <jhub-empty icon="pi-box" title="No active loans" text="Equipment appears here once an administrator checks an approved request out to you.">
+        <a class="btn btn-secondary" routerLink="/app/requests">View my requests</a>
+      </jhub-empty>
+    } @else {
+      <jhub-empty icon="pi-inbox" title="No requests yet" text="Pick the equipment your project needs and submit your first request.">
+        <a class="btn btn-primary" routerLink="/catalogue">Browse the catalogue</a>
+      </jhub-empty>
+    }
+  } @else {
+    @if (filters().length > 1) {
+      <div class="tabs" role="tablist" aria-label="Filter by status">
+        <button type="button" class="tab" role="tab" [attr.aria-selected]="filter() === 'ALL'" (click)="filter.set('ALL')">All <span class="count">{{ scoped().length }}</span></button>
+        @for (entry of filters(); track entry.status) {
+          <button type="button" class="tab" role="tab" [attr.aria-selected]="filter() === entry.status" (click)="filter.set(entry.status)">
+            {{ statusLabel(entry.status) }} <span class="count">{{ entry.count }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Items</th>
+            <th>{{ loansView ? 'Expected return' : 'Submitted' }}</th>
+            <th>Status</th>
+            <th><span class="sr-only">Open</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (request of visible(); track request.id) {
+            <tr>
+              <td>
+                <a class="cell-title stretched" [routerLink]="['/app/requests', request.id]">{{ request.projectName }}</a>
+                <span class="cell-sub">{{ request.id | reqRef }}</span>
+              </td>
+              <td><span class="cell-clamp">{{ itemSummary(request) }}</span></td>
+              <td class="nowrap">{{ (loansView ? request.expectedReturn : request.createdAt) | date: 'd MMM y' }}</td>
+              <td><jhub-status [status]="request.status" /></td>
+              <td class="chevron"><i class="pi pi-chevron-right" aria-hidden="true"></i></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5"><jhub-empty icon="pi-filter" title="Nothing with this status" text="Choose another status to see more." /></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

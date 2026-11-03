@@ -1,0 +1,94 @@
+/* ==========================================================================
+   JHUB Africa Vault — design tokens
+   Brand colours come from the JHUB Africa identity (navy, blue, green, red).
+   Everything else in the UI is built from these variables.
+   ========================================================================== */
+
+:root {
+  /* Brand */
+  --navy: #262571;
+  --navy-700: #1f1e5c;
+  --navy-800: #171647;
+  --navy-100: #dfdff2;
+  --navy-50: #f0f0f9;
+
+  --blue: #2a4695;
+  --blue-700: #223a7c;
+  --blue-100: #d6e0f5;
+  --blue-50: #ecf1fb;
+
+  --green: #3ea945;
+  --green-700: #2a7a30;
+  --green-100: #cdebd0;
+  --green-50: #ebf6ec;
+
+  --red: #d92d3a;
+  --red-700: #b01f2b;
+  --red-100: #f8ced3;
+  --red-50: #fdeef0;
+
+  --amber: #a8680b;
+  --amber-100: #f8e2b2;
+  --amber-50: #fef6e4;
+
+  --violet: #6445bd;
+  --violet-100: #e0d6f6;
+  --violet-50: #f3effc;
+
+  /* Neutrals (cool, tinted toward the navy) */
+  --ink: #0f1328;
+  --text: #1d2440;
+  --text-2: #49526e;
+  --text-3: #66708b;
+  --text-4: #98a0b6;
+  --line: #e3e6ef;
+  --line-soft: #edeff5;
+  --line-strong: #cbd1e0;
+  --bg: #f4f5fa;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+
+  /* Roles */
+  --primary: var(--navy);
+  --primary-hover: var(--navy-700);
+  --link: var(--blue);
+  --focus: #5b7bd6;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgb(15 19 40 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(15 19 40 / 0.08), 0 1px 2px rgb(15 19 40 / 0.04);
+  --shadow-md: 0 8px 20px -6px rgb(15 19 40 / 0.14), 0 2px 6px rgb(15 19 40 / 0.05);
+  --shadow-lg: 0 28px 56px -16px rgb(15 19 40 / 0.3), 0 8px 16px rgb(15 19 40 / 0.08);
+
+  /* Shape */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 999px;
+
+  /* Type */
+  --font: 'Manrope Variable', 'Manrope', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --fs-2xs: 0.6875rem;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.875rem;
+  --fs-md: 0.9375rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.25rem;
+  --fs-2xl: 1.5rem;
+  --fs-3xl: 1.875rem;
+  --fs-4xl: 2.5rem;
+
+  /* Layout */
+  --sidebar-w: 264px;
+  --topbar-h: 64px;
+  --content-w: 1240px;
+  --page-gutter: clamp(16px, 3vw, 32px);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 120ms;
+  --t-base: 180ms;
+}

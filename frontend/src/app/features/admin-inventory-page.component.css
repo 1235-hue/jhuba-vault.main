@@ -1,0 +1,7 @@
+.bar { display: grid; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.stock-select { width: 190px; }
+.thumb { display: grid; flex: none; place-items: center; width: 40px; height: 40px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--navy); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.item-copy { min-width: 190px; }
+.detail-desc { margin-bottom: 20px; color: var(--text-2); line-height: 1.6; }
+@media (max-width: 640px) { .stock-select { width: 100%; } }

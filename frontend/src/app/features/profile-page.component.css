@@ -1,0 +1,14 @@
+.notice { margin-bottom: 20px; }
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+.identity { display: grid; justify-items: center; gap: 16px; padding: 28px 24px; text-align: center; }
+.identity h2 { font-size: var(--fs-xl); overflow-wrap: anywhere; }
+.identity .muted { margin-top: 2px; overflow-wrap: anywhere; }
+.role { margin-top: 12px; }
+.upload { position: relative; cursor: pointer; }
+.upload:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.upload .sr-only { cursor: pointer; }
+.identity .alert { width: 100%; text-align: left; }
+.profile-form { display: grid; }
+.block { display: grid; gap: 18px; padding: 24px; border-bottom: 1px solid var(--line-soft); }
+.foot { padding: 16px 24px; border-radius: 0 0 var(--r-lg) var(--r-lg); background: var(--surface-2); }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }

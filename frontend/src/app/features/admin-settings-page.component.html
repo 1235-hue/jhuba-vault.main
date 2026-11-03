@@ -1,0 +1,50 @@
+<jhub-page-header title="Settings" subtitle="System health and administration shortcuts." />
+
+<div class="split">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head">
+        <div><h2 class="card-title">System status</h2><p class="card-sub">Live check of the Vault API</p></div>
+        <button type="button" class="btn btn-secondary btn-sm" [class.is-loading]="healthLoading()" [disabled]="healthLoading()" (click)="refreshStatus()"><i class="pi pi-sync" aria-hidden="true"></i> Check again</button>
+      </div>
+      <div class="card-body status">
+        <span class="status-icon" [class.is-ok]="health() === true" [class.is-bad]="health() === false"><i class="pi" [class]="health() === false ? 'pi pi-times' : health() === true ? 'pi pi-check' : 'pi pi-clock'" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ health() === null ? 'Checking…' : health() ? 'All systems operational' : 'API unreachable' }}</strong>
+          <p class="muted">
+            @if (healthError()) { {{ healthError() }} }
+            @else if (checkedAt()) { Last checked {{ checkedAt() | date: 'h:mm:ss a' }} }
+            @else { Contacting the API… }
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Recent activity</h2><a class="link" routerLink="/admin/audit-log">Open audit log</a></div>
+      @if (auditLoading()) {
+        <div class="loading-state" role="status"><span class="spinner"></span> Loading…</div>
+      } @else if (auditError()) {
+        <p class="card-body muted">{{ auditError() }}</p>
+      } @else if (!recentAudit().length) {
+        <p class="card-body muted">No activity has been recorded yet.</p>
+      } @else {
+        <ul>
+          @for (log of recentAudit(); track log.id) {
+            <li class="log"><div><strong>{{ log.action.replaceAll('_', ' ').toLowerCase() }}</strong><small>{{ log.actor?.fullName || 'System' }} · {{ log.entityType.toLowerCase() }}</small></div><time class="muted">{{ log.createdAt | date: 'd MMM, h:mm a' }}</time></li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">Administration</h2></div>
+    <nav class="shortcuts" aria-label="Administration shortcuts">
+      <a routerLink="/admin/users"><span class="stat-icon"><i class="pi pi-users" aria-hidden="true"></i></span><span><strong>Users</strong><small>Manage accounts and roles</small></span><i class="pi pi-chevron-right" aria-hidden="true"></i></a>
+      <a routerLink="/admin/inventory"><span class="stat-icon is-green"><i class="pi pi-database" aria-hidden="true"></i></span><span><strong>Inventory</strong><small>Stock levels and value</small></span><i class="pi pi-chevron-right" aria-hidden="true"></i></a>
+      <a routerLink="/admin/assets"><span class="stat-icon is-blue"><i class="pi pi-tags" aria-hidden="true"></i></span><span><strong>Assets</strong><small>Catalogue records and photos</small></span><i class="pi pi-chevron-right" aria-hidden="true"></i></a>
+      <a routerLink="/admin/audit-log"><span class="stat-icon is-violet"><i class="pi pi-history" aria-hidden="true"></i></span><span><strong>Audit log</strong><small>Who changed what, and when</small></span><i class="pi pi-chevron-right" aria-hidden="true"></i></a>
+    </nav>
+  </section>
+</div>

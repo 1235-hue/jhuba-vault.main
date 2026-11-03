@@ -1,0 +1,56 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Inspect Local PostgreSQL Containers",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"compose",
+				"ps",
+				"-a"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Start Installed Docker Desktop",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Start-Process -FilePath 'C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe'"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Launch Docker Desktop",
+			"type": "shell",
+			"command": "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+			"args": [],
+			"isBackground": true
+		},
+		{
+			"label": "Check Local Docker Engine",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"info",
+				"--format",
+				"{{.ServerVersion}}"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check Docker Compose State",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"compose",
+				"ps",
+				"-a"
+			],
+			"isBackground": false
+		}
+	]
+}

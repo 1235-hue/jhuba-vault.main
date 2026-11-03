@@ -1,0 +1,9 @@
+.bar { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.filter { position: relative; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+.popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; display: grid; gap: 14px; width: 280px; padding: 16px; box-shadow: var(--shadow-lg); }
+.project { min-width: 200px; }
+.project .cell-title:hover { color: var(--navy); text-decoration: underline; text-underline-offset: 3px; }
+.equipment { min-width: 190px; }
+.person { min-width: 170px; }
+@media (max-width: 640px) { .filter, .filter .btn { width: 100%; } .popover { right: auto; left: 0; } }

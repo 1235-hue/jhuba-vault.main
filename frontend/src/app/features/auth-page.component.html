@@ -1,0 +1,219 @@
+<div class="auth" [class.auth--login]="mode() !== 'register'">
+  <section class="auth-main" [class.auth-main--login]="mode() !== 'register'">
+    <a class="auth-brand" routerLink="/" aria-label="JHUB Africa Vault home">
+      <img src="assets/logos/jhub-africa.png" alt="JHUB Africa" width="324" height="156" />
+    </a>
+
+    <div class="auth-card" [class.auth-card--login]="mode() !== 'register'">
+      @if (mode() !== 'register') {
+        <div class="login-security" aria-hidden="true">
+          <span class="login-orbit login-orbit--outer"></span>
+          <span class="login-orbit login-orbit--inner"></span>
+          <span class="login-security-dot login-security-dot--one"></span>
+          <span class="login-security-dot login-security-dot--two"></span>
+          <svg viewBox="0 0 72 80" fill="none" focusable="false">
+            <path d="M36 4 63 14v20c0 18-11 32-27 41C20 66 9 52 9 34V14L36 4Z" fill="url(#vaultShield)" />
+            <path d="M36 4 63 14v20c0 18-11 32-27 41C20 66 9 52 9 34V14L36 4Z" stroke="#7566D9" stroke-opacity=".38" stroke-width="2" />
+            <rect x="25" y="35" width="22" height="18" rx="5" fill="#fff" />
+            <path d="M30 35v-5a6 6 0 0 1 12 0v5" stroke="#fff" stroke-linecap="round" stroke-width="4" />
+            <circle cx="36" cy="43" r="2" fill="#6254C7" />
+            <path d="M36 45v3" stroke="#6254C7" stroke-linecap="round" stroke-width="2" />
+            <defs>
+              <linearGradient id="vaultShield" x1="13" y1="8" x2="60" y2="72" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#8172E8" /><stop offset="1" stop-color="#4F46A5" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      }
+      <h1>
+        @switch (mode()) {
+          @case ('register') { Create your innovator account }
+          @default { Welcome back }
+        }
+      </h1>
+      <p class="auth-sub">
+        @if (mode() === 'register') { Register to request equipment and track your loans from the Vault. }
+        @else { Sign in to your JHUB Africa Vault account to access equipment, manage requests and keep your projects moving. }
+      </p>
+
+      @if (auth.error()) {
+        <div class="alert alert-danger" [class.login-auth-alert]="mode() !== 'register'" role="alert">
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <div class="alert-body">{{ auth.error() }}</div>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" [class.login-form]="mode() !== 'register'" novalidate>
+        <div class="form-grid">
+          @if (mode() === 'register') {
+            <div class="field full">
+              <label for="fullName">Full name</label>
+              <input id="fullName" class="input" type="text" formControlName="fullName" autocomplete="name" placeholder="As it appears on your ID" />
+              @if (invalid('fullName')) { <span class="field-error">Enter your full name.</span> }
+            </div>
+          }
+
+          <div class="field full">
+            <label for="email">Email address</label>
+            @if (mode() !== 'register') {
+              <div class="input-icon login-email-control">
+                <i class="pi pi-envelope" aria-hidden="true"></i>
+                <input id="email" class="input" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />
+              </div>
+            } @else {
+              <input id="email" class="input" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />
+            }
+            @if (invalid('email')) { <span class="field-error">Enter a valid email address.</span> }
+          </div>
+
+          @if (mode() === 'register') {
+            <div class="field">
+              <label for="phone">Phone number</label>
+              <div class="input-group">
+                <span class="addon">+254</span>
+                <input id="phone" class="input" type="tel" formControlName="phoneNumber" maxlength="9" inputmode="numeric" autocomplete="tel-national" placeholder="712345678" />
+              </div>
+              @if (invalid('phoneNumber')) {
+                <span class="field-error">Enter 9 digits starting with 7 or 1, without the leading 0.</span>
+              } @else {
+                <span class="hint">Nine digits after +254.</span>
+              }
+            </div>
+
+            <div class="field">
+              <label for="identificationId">ID or student number</label>
+              <input id="identificationId" class="input" type="text" formControlName="identificationId" placeholder="e.g. SCT211-0000/2021" />
+              @if (invalid('identificationId')) { <span class="field-error">Enter your ID or student number.</span> }
+            </div>
+          }
+
+          <div class="field full">
+            <label for="password">Password</label>
+            <div class="input-group" [class.login-password-group]="mode() !== 'register'">
+              @if (mode() !== 'register') {
+                <span class="login-input-prefix"><i class="pi pi-lock" aria-hidden="true"></i></span>
+              }
+              <input
+                id="password"
+                class="input"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                [autocomplete]="mode() === 'register' ? 'new-password' : 'current-password'"
+                placeholder="At least 8 characters"
+              />
+              <button type="button" class="addon-btn" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showPassword()" (click)="showPassword.set(!showPassword())">
+                <i class="pi" [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+              </button>
+            </div>
+            @if (invalid('password')) { <span class="field-error">Use at least 8 characters.</span> }
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block submit" type="submit" [class.is-loading]="auth.loading()" [disabled]="auth.loading()">
+          {{ mode() === 'register' ? 'Create account' : 'Sign in' }}
+        </button>
+      </form>
+
+      <p class="auth-foot">
+        @if (mode() === 'register') {
+          Already registered? <a class="link" routerLink="/auth/login">Sign in</a>
+        } @else {
+          New to the Vault? <a class="link" routerLink="/auth/register">Create an account</a>
+        }
+      </p>
+    </div>
+  </section>
+
+  @if (mode() !== 'register') {
+    <aside class="auth-aside auth-aside--login" aria-label="About the Vault">
+      <div class="login-panel-visuals" aria-hidden="true">
+        <span class="login-panel-orb login-panel-orb--blue"></span>
+        <span class="login-panel-orb login-panel-orb--violet"></span>
+        <span class="login-light-sweep"></span>
+        <span class="login-particle login-particle--one"></span>
+        <span class="login-particle login-particle--two"></span>
+        <span class="login-particle login-particle--three"></span>
+        <span class="login-particle login-particle--four"></span>
+        <span class="login-particle login-particle--five"></span>
+        <svg class="login-circuit-art" viewBox="0 0 700 620" fill="none" focusable="false">
+          <g class="circuit-base">
+            <path d="M18 112h116l38 38h112l42-42h88l44 44h222" />
+            <path d="M44 318h112l42-42h104l44 44h92l40-40h198" />
+            <path d="M98 470h104l44-44h86l40 40h98l42-42h168" />
+            <path d="M244 30v98l42 42v72m0 78v104l-46 46v118" />
+            <path d="M432 18v100l-42 42v72m0 84v88l48 48v146" />
+            <path d="M566 70v88l-42 42v70m0 80v80l42 42v118" />
+            <path d="M18 222h92l36 36h70m154 86h70l38 38h118m-176 62h-54" />
+          </g>
+          <g class="circuit-pulses">
+            <path class="circuit-pulse circuit-pulse--one" d="M18 112h116l38 38h112l42-42h88l44 44h222" />
+            <path class="circuit-pulse circuit-pulse--two" d="M44 318h112l42-42h104l44 44h92l40-40h198" />
+            <path class="circuit-pulse circuit-pulse--three" d="M98 470h104l44-44h86l40 40h98l42-42h168" />
+            <path class="circuit-pulse circuit-pulse--four" d="M244 30v98l42 42v72m0 78v104l-46 46v118" />
+            <path class="circuit-pulse circuit-pulse--five" d="M432 18v100l-42 42v72m0 84v88l48 48v146" />
+          </g>
+          <g class="circuit-nodes">
+            <circle cx="134" cy="112" r="4" /><circle cx="172" cy="150" r="4" />
+            <circle cx="284" cy="150" r="4" /><circle cx="326" cy="108" r="4" />
+            <circle cx="398" cy="108" r="4" /><circle cx="156" cy="318" r="4" />
+            <circle cx="198" cy="276" r="4" /><circle cx="302" cy="276" r="4" />
+            <circle cx="346" cy="320" r="4" /><circle cx="444" cy="320" r="4" />
+            <circle cx="202" cy="470" r="4" /><circle cx="246" cy="426" r="4" />
+            <circle cx="332" cy="426" r="4" /><circle cx="372" cy="466" r="4" />
+            <circle cx="244" cy="128" r="4" /><circle cx="286" cy="170" r="4" />
+            <circle cx="432" cy="118" r="4" /><circle cx="390" cy="160" r="4" />
+            <circle cx="566" cy="158" r="4" /><circle cx="524" cy="200" r="4" />
+          </g>
+        </svg>
+        <svg class="equipment-illustration equipment-illustration--laptop" viewBox="0 0 280 190" fill="none" focusable="false">
+          <rect x="52" y="22" width="176" height="118" rx="12" fill="url(#loginDevice)" stroke="#B9C9FF" stroke-opacity=".72" stroke-width="2" />
+          <rect x="64" y="34" width="152" height="94" rx="6" fill="#101D43" fill-opacity=".92" />
+          <path d="M84 56h54M84 70h92M84 84h72M84 105h38" stroke="#8CB4FF" stroke-linecap="round" stroke-opacity=".66" stroke-width="4" />
+          <circle cx="190" cy="56" r="8" fill="#A78BFA" fill-opacity=".9" />
+          <path d="m34 150 18-10h176l18 10c4 3 2 9-4 9H38c-6 0-8-6-4-9Z" fill="#9CB8FF" fill-opacity=".3" stroke="#C1D2FF" stroke-opacity=".72" stroke-width="2" />
+          <defs>
+            <linearGradient id="loginDevice" x1="52" y1="22" x2="228" y2="140" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#738FF0" stop-opacity=".5" /><stop offset="1" stop-color="#5B4D9C" stop-opacity=".3" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <svg class="equipment-illustration equipment-illustration--chip" viewBox="0 0 140 140" fill="none" focusable="false">
+          <rect x="32" y="32" width="76" height="76" rx="14" fill="#372D76" fill-opacity=".8" stroke="#C1B5FF" stroke-opacity=".8" stroke-width="2" />
+          <rect x="48" y="48" width="44" height="44" rx="8" fill="#17254D" stroke="#8AB6FF" stroke-opacity=".76" stroke-width="2" />
+          <path d="M48 20v12m22-12v12m22-12v12m0 76v12m-22-12v12m-22-12v12M20 48h12m-12 22h12m-12 22h12m76-44h12m-12 22h12m-12 22h12" stroke="#B7C7FF" stroke-linecap="round" stroke-width="3" />
+          <path d="M60 70h20m-10-10v20" stroke="#9DEBDD" stroke-linecap="round" stroke-width="3" />
+        </svg>
+      </div>
+      <div class="aside-inner login-panel-content">
+        <p class="login-panel-eyebrow">JHUB AFRICA VAULT</p>
+        <h2>Where Innovation Meets Opportunity.</h2>
+        <p class="login-panel-intro">Discover the tools, equipment and resources that help turn your ideas into real-world solutions.</p>
+        <ul class="login-highlights">
+          <li><i class="pi pi-search" aria-hidden="true"></i><span>Explore Equipment</span></li>
+          <li><i class="pi pi-box" aria-hidden="true"></i><span>Request Resources</span></li>
+          <li><i class="pi pi-bolt" aria-hidden="true"></i><span>Build Innovations</span></li>
+        </ul>
+        <div class="partners">
+          <jhub-brand-logo logo="jkuat" variant="footer" />
+          <jhub-brand-logo logo="jhub" variant="footer" />
+        </div>
+      </div>
+    </aside>
+  } @else {
+    <aside class="auth-aside" aria-label="About the Vault">
+      <div class="aside-inner">
+        <h2>Every asset accounted for, from request to return.</h2>
+        <ul class="aside-list">
+          <li><i class="pi pi-search" aria-hidden="true"></i><span>See live availability before you request</span></li>
+          <li><i class="pi pi-users" aria-hidden="true"></i><span>Keep your team and project on the record</span></li>
+          <li><i class="pi pi-clock" aria-hidden="true"></i><span>Track due dates so nothing goes overdue</span></li>
+        </ul>
+        <div class="partners">
+          <jhub-brand-logo logo="jkuat" variant="auth" />
+          <jhub-brand-logo logo="jhub" variant="auth" />
+        </div>
+      </div>
+    </aside>
+  }
+</div>

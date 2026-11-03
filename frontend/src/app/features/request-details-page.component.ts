@@ -1,17 +1,99 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RequestService } from '../core/api.service';
+import { AssetRequest, RequestStatus } from '../core/models';
+import { AuthStore } from '../state/auth.store';
+import { EmptyStateComponent } from '../shared/empty-state.component';
+import { PageHeaderComponent } from '../shared/page-header.component';
+import { StatusBadgeComponent } from '../shared/status-badge.component';
+import { initials, requestRef } from '../shared/format';
 
-@Component({ selector: 'jhub-request-details-page', standalone: true, styleUrls: ['./innovator-theme.component.css'], imports: [DatePipe, RouterLink], changeDetection: ChangeDetectionStrategy.OnPush, template: `
-  @if (request(); as current) {<main class="request-details page-width"><a class="back-link" routerLink="/app/requests">← Back to my requests</a><div class="details-heading"><div><p class="eyebrow">REQUEST {{ current.id }}</p><h1>{{ current.projectName }}</h1><p>Submitted {{ current.createdAt | date:'d MMMM yyyy' }}</p></div><span class="status" [class]="current.status.toLowerCase()">{{ current.status }}</span></div><section class="status-message"><strong>{{ message(current.status) }}</strong><span>{{ current.rejectionReason || 'Request activity and collection details will appear here as the request progresses.' }}</span></section><div class="details-grid"><section class="details-card"><p class="eyebrow">PROJECT INFORMATION</p><h2>{{ current.projectName }}</h2><p>{{ current.projectAbstract }}</p><div class="facts"><span>Start date<strong>{{ current.startDate | date:'d MMM yyyy' }}</strong></span><span>Loan duration<strong>{{ current.loanDays }} days</strong></span><span>Expected return<strong>{{ current.expectedReturn | date:'d MMM yyyy' }}</strong></span></div></section><section class="details-card"><p class="eyebrow">REQUESTED COMPONENTS</p>@for (item of current.requestItems; track item.id || item.assetId) {<div class="item-row"><span><strong>{{ item.asset.name }}</strong><small>{{ item.asset.assetTag }} · {{ item.asset.availableQty }} currently available</small></span><b>× {{ item.quantity }}</b></div>}</section><section class="details-card"><p class="eyebrow">TEAM MEMBERS</p>@for (member of current.teamMembers; track member.id || member.email) {<div class="member-row"><span class="member-avatar">{{ member.fullName.slice(0, 2).toUpperCase() }}</span><span><strong>{{ member.fullName }}</strong><small>{{ member.roleInProject }} · {{ member.studentOrIdNo }}</small></span></div>}</section></div></main>} @else {<main class="request-details page-width"><div class="state">Unable to load this request.</div></main>}
-`, styles: [`:host{display:block}.request-details{padding:55px 0 110px}.back-link{color:#667083;font-size:12px;text-decoration:none}.details-heading{display:flex;justify-content:space-between;align-items:end;margin:35px 0}.eyebrow{color:#3ea945;font-size:10px;font-weight:800;letter-spacing:2px;margin:0 0 15px}.details-heading h1{font:400 clamp(40px,5vw,60px)/1.05 Georgia,serif;color:#262571;margin:0}.details-heading h1 em{color:#3ea945}.details-heading p:not(.eyebrow){font-size:12px;color:#7c8492}.status{font-size:10px;font-weight:800;letter-spacing:1px}.pending{color:#b17b19}.status-message{display:flex;flex-direction:column;gap:7px;background:#fff8e8;border-left:3px solid #b17b19;padding:18px;margin-bottom:20px;font-size:12px;color:#667083}.status-message strong{color:#8a6112}.details-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.details-card{background:#fff;border:1px solid #e6e8ee;padding:25px}.details-card h2{font:27px Georgia,serif;color:#262571;margin:0 0 13px}.details-card>p:not(.eyebrow){font-size:12px;color:#667083;line-height:1.6}.facts{display:flex;gap:28px;margin-top:25px;padding-top:18px;border-top:1px solid #edf0f4}.facts span,.facts strong{display:block;font-size:10px;color:#7c8492}.facts strong{color:#262571;margin-top:7px}.item-row,.member-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #edf0f4;font-size:12px}.item-row>span,.member-row>span:last-child{flex:1}.item-row strong,.item-row small,.member-row strong,.member-row small{display:block}.item-row small,.member-row small{font-size:10px;color:#7c8492;margin-top:4px}.item-row b{color:#262571}.member-avatar{width:34px;height:34px;display:grid;place-items:center;background:#e5eafa;color:#2a4695;font-size:10px;font-weight:700}.member-avatar.green{background:#e5f2e6;color:#3ea945}@media(max-width:760px){.request-details{padding-top:45px}.details-heading{display:block}.details-heading .status{display:inline-block;margin-top:20px}.details-grid{grid-template-columns:1fr}.facts{gap:15px;flex-wrap:wrap}}`]
+interface Step {
+  label: string;
+  detail: string;
+  state: 'done' | 'current' | 'upcoming' | 'bad';
+}
+
+@Component({
+  selector: 'jhub-request-details-page',
+  standalone: true,
+  imports: [DatePipe, RouterLink, EmptyStateComponent, PageHeaderComponent, StatusBadgeComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './request-details-page.component.html',
+  styleUrl: './request-details-page.component.css'
 })
 export class RequestDetailsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(RequestService);
-  protected readonly request = toSignal(this.route.paramMap.pipe(switchMap(params => this.service.getById(params.get('id') ?? '')), catchError(() => of(undefined))), { initialValue: undefined });
-  protected message(status: string): string { return status === 'PENDING' ? 'Awaiting admin review' : status === 'APPROVED' ? 'Approved for collection' : status === 'REJECTED' ? 'Request rejected' : status === 'CHECKED_OUT' ? 'Assets checked out' : status === 'RETURNED' ? 'Assets returned' : 'Loan overdue'; }
+  protected readonly auth = inject(AuthStore);
+
+  protected readonly request = signal<AssetRequest | null>(null);
+  protected readonly loading = signal(true);
+  protected readonly failed = signal(false);
+  protected readonly initials = initials;
+  protected readonly requestRef = requestRef;
+  protected readonly RequestStatus = RequestStatus;
+  protected readonly backLink = computed(() => (this.auth.isAdmin() ? '/admin/requests' : '/app/requests'));
+
+  protected readonly steps = computed<Step[]>(() => {
+    const request = this.request();
+    if (!request) return [];
+    const status = request.status;
+    const reached = (...list: RequestStatus[]) => list.includes(status);
+    const rejected = status === RequestStatus.REJECTED;
+    const steps: Step[] = [{ label: 'Submitted', detail: 'Request received by the Vault', state: 'done' }];
+
+    if (rejected) {
+      steps.push({ label: 'Rejected', detail: request.rejectionReason || 'The request was not approved', state: 'bad' });
+      return steps;
+    }
+    const approved = reached(RequestStatus.APPROVED, RequestStatus.CHECKED_OUT, RequestStatus.OVERDUE, RequestStatus.RETURNED);
+    steps.push({ label: 'Approved', detail: approved ? 'Cleared for collection' : 'Waiting for an administrator', state: approved ? 'done' : 'current' });
+    const out = reached(RequestStatus.CHECKED_OUT, RequestStatus.OVERDUE, RequestStatus.RETURNED);
+    steps.push({
+      label: 'Checked out',
+      detail: out ? 'Assigned to the project team' : 'Collect once approved',
+      state: out ? 'done' : approved ? 'current' : 'upcoming'
+    });
+    const returned = status === RequestStatus.RETURNED;
+    steps.push({
+      label: returned ? 'Returned' : status === RequestStatus.OVERDUE ? 'Return overdue' : 'Return',
+      detail: returned ? 'Back in the Vault' : 'Return by the expected date',
+      state: returned ? 'done' : status === RequestStatus.OVERDUE ? 'bad' : out ? 'current' : 'upcoming'
+    });
+    return steps;
+  });
+
+  constructor() {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => this.load(params.get('id') ?? ''));
+  }
+
+  protected load(id: string): void {
+    this.loading.set(true);
+    this.failed.set(false);
+    this.service.getById(id).subscribe({
+      next: request => {
+        this.request.set(request);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.request.set(null);
+        this.failed.set(true);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  protected banner(status: RequestStatus): { tone: string; icon: string; title: string; text: string } {
+    switch (status) {
+      case RequestStatus.PENDING: return { tone: 'warning', icon: 'pi-clock', title: 'Awaiting review', text: 'An administrator will review this request shortly.' };
+      case RequestStatus.APPROVED: return { tone: 'info', icon: 'pi-check-circle', title: 'Approved for collection', text: 'Collect the equipment from the Vault to start the loan.' };
+      case RequestStatus.REJECTED: return { tone: 'danger', icon: 'pi-times-circle', title: 'Request rejected', text: 'See the reason below. You can submit a new request if needed.' };
+      case RequestStatus.CHECKED_OUT: return { tone: 'info', icon: 'pi-box', title: 'Equipment checked out', text: 'Return it by the expected date shown below.' };
+      case RequestStatus.RETURNED: return { tone: 'success', icon: 'pi-replay', title: 'Equipment returned', text: 'Thank you — this loan is complete.' };
+      default: return { tone: 'danger', icon: 'pi-exclamation-triangle', title: 'Return overdue', text: 'Please return the equipment to the Vault as soon as possible.' };
+    }
+  }
 }

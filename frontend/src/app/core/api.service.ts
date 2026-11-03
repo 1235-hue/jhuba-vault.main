@@ -1,10 +1,45 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { EMPTY, expand, map, Observable, reduce } from 'rxjs';
 import { Asset, AssetCategory, AssetRequest, AuditLog, RequestStatus, TeamMember, User } from './models';
 
 const API_URL = '/api';
 interface ApiResponse<T> { success: boolean; data: T; }
+export interface AssetImportRow {
+  rowNumber: number;
+  item: string;
+  description: string;
+  quantityRaw: string;
+  categoryRaw: string;
+  quantity: number | null;
+  category: AssetCategory | null;
+  assetTag: string;
+  warnings: string[];
+  errors: string[];
+  excluded: boolean;
+  warningsApproved: boolean;
+}
+export interface AssetImportPreview {
+  fileName: string;
+  sheetName: string;
+  previewToken: string;
+  totalPopulatedRows: number;
+  validRowsReady: number;
+  rowsRequiringCorrection: number;
+  rowsWithWarnings: number;
+  duplicatesOrPotentialDuplicates: number;
+  missingQuantities: number;
+  missingDescriptions: number;
+  categoryMappings: Record<string, number>;
+  rows: AssetImportRow[];
+}
+export interface AssetImportResult {
+  imported: number;
+  skipped: number;
+  alreadyImported?: number;
+  failed: number;
+  failedRows: Array<{ rowNumber?: number; errors: string[] }>;
+}
 export interface AuthCredentials { email: string; password: string; }
 export interface RegistrationData extends AuthCredentials { fullName: string; phoneNumber: string; identificationId: string; department?: string; }
 export interface AuthResponse { user: User; token: string; }
@@ -23,6 +58,17 @@ export class AuthService {
 @Injectable({ providedIn: 'root' })
 export class AssetService {
   private readonly http = inject(HttpClient);
+  previewImport(file: File): Observable<HttpEvent<ApiResponse<AssetImportPreview>>> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<ApiResponse<AssetImportPreview>>(`${API_URL}/assets/import/preview`, form, { observe: 'events', reportProgress: true });
+  }
+  confirmImport(file: File, confirmation: { previewToken: string; approveZeroPrice: boolean; rows: Array<{ rowNumber: number; name: string; description: string; quantity: number; category: AssetCategory; price: number; warningsApproved: boolean }> }): Observable<HttpEvent<ApiResponse<AssetImportResult>>> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('confirmation', JSON.stringify(confirmation));
+    return this.http.post<ApiResponse<AssetImportResult>>(`${API_URL}/assets/import/confirm`, form, { observe: 'events', reportProgress: true });
+  }
   list(filters?: { search?: string; category?: AssetCategory; availability?: string }): Observable<Asset[]> {
     let params = new HttpParams();
     if (filters?.search) params = params.set('search', filters.search);

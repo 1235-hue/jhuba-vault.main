@@ -1,127 +1,179 @@
-@if (showLanding()) {
-<header class="topbar">
-  <a class="brand" routerLink="/" aria-label="JHUB Africa Vault home">
-    <img src="assets/logos/jhub-africa.png" alt="JHUB Africa">
-  </a>
-  <nav class="desktop-nav" aria-label="Primary navigation">
-    <a routerLink="/catalogue">Catalogue</a>
-    <a href="#workflow">How it works</a>
-    <a routerLink="/catalogue">Categories</a>
-  </nav>
-  <div class="nav-actions">
-    <a routerLink="/auth/login" class="text-button">Sign in</a>
-    <a routerLink="/auth/register" class="primary-button">Create account</a>
-  </div>
-</header>
+<a class="skip-link" href="#main">Skip to main content</a>
 
-<main id="top">
-  <section class="hero page-width">
-    <div class="hero-copy">
-      <p class="eyebrow"><span></span> JHUB AFRICA / ASSET VAULT</p>
-      <h1>Build what<br>matters.<br><em>Borrow the tools.</em></h1>
-      <p>A clear, accountable way for JHUB innovators to discover, request, and track the physical assets that turn promising ideas into working prototypes.</p>
-      <div class="hero-actions">
-        <a class="button primary" routerLink="/catalogue">Browse assets <span aria-hidden="true">→</span></a>
-        <a class="button secondary" routerLink="/auth/register">Join the innovator network</a>
-      </div>
-      <a class="availability" routerLink="/catalogue"><span></span> Live inventory available</a>
-    </div>
-    <div class="hero-art" aria-label="Asset card illustration">
-      <div class="orbit orbit-one"></div>
-      <div class="orbit orbit-two"></div>
-      <div class="asset-card">Arduino Uno R3 <small>AV-0182</small></div>
-      <div class="asset-card count-card">4 <small>units available</small></div>
-    </div>
-  </section>
+@switch (layout()) {
+  @case ('bare') {
+    <main id="main"><router-outlet /></main>
+  }
 
-  <div class="steps-bar">
-    <div class="page-width steps">
-      <span><b>01</b> Discover what is available</span>
-      <span><b>02</b> Request for your project</span>
-      <span><b>03</b> Track it from pickup to return</span>
-    </div>
-  </div>
-
-  <section class="inventory page-width" id="catalogue">
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">THE VAULT, AT A GLANCE</p>
-        <h2>Everything to <em>move</em><br>from idea to <em>impact.</em></h2>
-      </div>
-      <a routerLink="/catalogue" class="view-all">View all assets <span>↗</span></a>
-    </div>
-    <div class="metrics">
-      @for (metric of metrics; track metric.title) {
-        <article class="metric-card">
-          <span>{{ metric.title }}</span>
-          <strong>{{ metric.value }}</strong>
-          <b>{{ metric.label }}</b>
-          <small>{{ metric.detail }}</small>
-        </article>
-      }
-    </div>
-  </section>
-
-  <section class="catalogue page-width">
-    <div class="section-heading compact">
-      <div>
-        <p class="eyebrow">PHYSICAL CATALOGUE</p>
-        <h2>Asset categories</h2>
-      </div>
-      <span class="inventory-note">Live inventory is updated daily</span>
-    </div>
-    <div class="category-grid">
-      @for (category of categories; track category.title) {
-        <a class="category-card" routerLink="/catalogue" [attr.aria-label]="'View ' + category.title + ' items'">
-          <i [class]="category.icon" aria-hidden="true"></i>
-          <strong>{{ category.title }}</strong>
-          <small>{{ category.detail }}</small>
-          <span>View items →</span>
+  @case ('public') {
+    <header class="public-header">
+      <div class="public-header-inner">
+        <a class="public-brand" routerLink="/" aria-label="JHUB Africa Vault home">
+          <img src="assets/logos/jhub-africa.png" alt="JHUB Africa" width="324" height="156" />
         </a>
-      }
-    </div>
-  </section>
 
-  <section class="workflow page-width" id="workflow">
-    <div class="workflow-heading">
-      <p class="eyebrow">PROTOCOL DISCIPLINE</p>
-      <h2>Custodial workflow</h2>
-      <p>Structured, transparent and designed for accountable access.</p>
-    </div>
-    <div class="workflow-grid">
-      @for (step of workflow; track step.number) {
-        <article class="workflow-card">
-          <div class="workflow-top"><span>{{ step.number }}</span><i [class]="step.icon" aria-hidden="true"></i></div>
-          <h3>{{ step.title }}</h3>
-          <p>{{ step.detail }}</p>
-          <a routerLink="/catalogue">{{ step.link }} <span>→</span></a>
-        </article>
-      }
-    </div>
-  </section>
+        <button
+          type="button"
+          class="btn btn-secondary btn-icon public-toggle"
+          [attr.aria-expanded]="menuOpen()"
+          aria-controls="public-menu"
+          aria-label="Toggle menu"
+          (click)="menuOpen.set(!menuOpen())"
+        >
+          <i class="pi" [class]="menuOpen() ? 'pi pi-times' : 'pi pi-bars'" aria-hidden="true"></i>
+        </button>
 
-  <section class="deployment page-width">
-    <div>
-      <p class="eyebrow">IMMEDIATE DEPLOYMENT</p>
-      <h2>Accelerate your incubation sprint with dedicated hardware.</h2>
-      <p>From prototyping to field deployment, access the right instruments without slowing down your team.</p>
-    </div>
-    <a class="button light" routerLink="/catalogue">Browse physical catalog <span>→</span></a>
-  </section>
-</main>
+        <div id="public-menu" class="public-menu" [class.is-open]="menuOpen()">
+          <nav class="public-nav" aria-label="Primary">
+            <a routerLink="/catalogue" [class.active]="path() === '/catalogue'">Catalogue</a>
+            <a routerLink="/" fragment="categories">Categories</a>
+            <a routerLink="/" fragment="how-it-works">How it works</a>
+          </nav>
+          <div class="public-actions">
+            @if (auth.user()) {
+              <a class="btn btn-primary" [routerLink]="dashboardLink()">Go to dashboard</a>
+            } @else {
+              <a class="btn btn-ghost" routerLink="/auth/login">Sign in</a>
+              <a class="btn btn-primary" routerLink="/auth/register">Create account</a>
+            }
+          </div>
+        </div>
+      </div>
+    </header>
 
-<footer class="footer">
-  <div class="footer-grid page-width">
-    <div class="footer-about">
-      <a class="brand footer-brand" routerLink="/"><img src="assets/logos/jhub-africa.png" alt="JHUB Africa"></a>
-      <p>Pan-African physical and IoT asset repository for developing ideas, labs, and innovation nodes.</p>
+    <main id="main" class="public-main"><router-outlet /></main>
+
+    <footer class="public-footer">
+      <div class="container footer-grid">
+        <div class="footer-about">
+          <img src="assets/logos/jhub-africa.png" alt="JHUB Africa" width="324" height="156" />
+          <p>The asset register for JHUB innovators. Find equipment, request it for your project and keep a clear record from handover to return.</p>
+        </div>
+        <nav aria-label="Vault">
+          <h2>Vault</h2>
+          <a routerLink="/catalogue">Asset catalogue</a>
+          <a routerLink="/" fragment="categories">Categories</a>
+          <a routerLink="/" fragment="how-it-works">How it works</a>
+        </nav>
+        <nav aria-label="Account">
+          <h2>Account</h2>
+          <a routerLink="/auth/login">Sign in</a>
+          <a routerLink="/auth/register">Create an account</a>
+          <a routerLink="/admin/login">Administrator sign-in</a>
+        </nav>
+        <div class="footer-partner">
+          <h2>Hosted at</h2>
+          <div class="partner">
+            <img src="assets/logos/jkuat.png" alt="JKUAT emblem" width="40" height="44" />
+            <span>Jomo Kenyatta University of Agriculture and Technology</span>
+          </div>
+        </div>
+      </div>
+      <div class="container footer-base">
+        <span>© {{ year }} JHUB Africa Vault</span>
+        <span>Built for accountable innovation across Africa</span>
+      </div>
+    </footer>
+  }
+
+  @case ('app') {
+    <div class="app">
+      <aside class="sidebar" [class.is-open]="menuOpen()" aria-label="Sidebar">
+        <a class="sidebar-brand" [routerLink]="homeLink()" aria-label="JHUB Africa Vault home">
+          <img src="assets/logos/jhub-africa.png" alt="JHUB Africa" width="324" height="156" />
+        </a>
+
+        <nav class="nav" aria-label="Main navigation">
+          @for (group of navGroups(); track $index) {
+            <div class="nav-group">
+              @if (group.heading) { <p class="nav-heading">{{ group.heading }}</p> }
+              @for (item of group.items; track item.link) {
+                <a
+                  class="nav-link"
+                  [routerLink]="item.link"
+                  [class.active]="isActive(item)"
+                  [attr.aria-current]="isActive(item) ? 'page' : null"
+                >
+                  <i class="pi" [class]="'pi ' + item.icon" aria-hidden="true"></i>
+                  <span>{{ item.label }}</span>
+                </a>
+              }
+            </div>
+          }
+        </nav>
+
+        <div class="sidebar-foot">
+          <img src="assets/logos/jkuat.png" alt="" width="28" height="30" />
+          <span>Jomo Kenyatta University of Agriculture and Technology</span>
+        </div>
+      </aside>
+
+      @if (menuOpen()) { <div class="scrim" (click)="menuOpen.set(false)" aria-hidden="true"></div> }
+
+      <div class="main">
+        <header class="topbar">
+          <button
+            type="button"
+            class="btn btn-ghost btn-icon menu-button"
+            aria-label="Open navigation"
+            [attr.aria-expanded]="menuOpen()"
+            (click)="menuOpen.set(!menuOpen())"
+          >
+            <i class="pi pi-bars" aria-hidden="true"></i>
+          </button>
+
+          <jhub-global-search [mode]="isAdmin() ? 'admin' : 'catalogue'" />
+
+          <div class="topbar-end">
+            @if (!isAdmin()) {
+              <a class="btn btn-secondary cart-button" routerLink="/app/cart" aria-label="Request cart">
+                <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+                <span class="cart-label">Request cart</span>
+                @if (cart.itemCount() > 0) { <span class="count cart-count">{{ cart.itemCount() }}</span> }
+              </a>
+            }
+
+            @if (auth.user(); as user) {
+              <div class="user-menu">
+                <button
+                  type="button"
+                  class="user-trigger"
+                  aria-haspopup="menu"
+                  [attr.aria-expanded]="userMenuOpen()"
+                  (click)="userMenuOpen.set(!userMenuOpen())"
+                >
+                  <span class="avatar">
+                    @if (user.avatarUrl) { <img [src]="user.avatarUrl" alt="" /> } @else { {{ initials(user.fullName) }} }
+                  </span>
+                  <span class="user-copy">
+                    <strong>{{ user.fullName }}</strong>
+                    <small>{{ user.role === Role.ADMIN ? 'Administrator' : 'Innovator' }}</small>
+                  </span>
+                  <i class="pi pi-chevron-down" aria-hidden="true"></i>
+                </button>
+
+                @if (userMenuOpen()) {
+                  <div class="menu card" role="menu">
+                    <div class="menu-head">
+                      <strong>{{ user.fullName }}</strong>
+                      <small>{{ user.email }}</small>
+                    </div>
+                    <a role="menuitem" class="menu-item" routerLink="/app/profile"><i class="pi pi-user" aria-hidden="true"></i> Your profile</a>
+                    @if (user.role !== Role.ADMIN) {
+                      <a role="menuitem" class="menu-item" routerLink="/catalogue"><i class="pi pi-box" aria-hidden="true"></i> Asset catalogue</a>
+                    }
+                    <button role="menuitem" type="button" class="menu-item menu-danger" (click)="signOut()"><i class="pi pi-sign-out" aria-hidden="true"></i> Sign out</button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </header>
+
+        <main id="main" class="content"><router-outlet /></main>
+      </div>
     </div>
-    <div><h3>About & foundation</h3><a href="#workflow">Technology sovereignty</a><a href="#workflow">Custodial SLA</a><a routerLink="/catalogue">Automated tracking</a><a href="#workflow">Research and governance</a></div>
-    <div><h3>Partnerships & ecosystem</h3><a routerLink="/catalogue">Regional university nodes</a><a routerLink="/catalogue">Prototyping facilities</a><a routerLink="/catalogue">Hardware ecosystem</a><a routerLink="/catalogue">Venture & seed incubators</a></div>
-    <div><h3>Opportunities</h3><a routerLink="/auth/register">Innovator fellowships</a><a routerLink="/auth/register">Student hardware grants</a><a routerLink="/auth/register">Cohort acceleration sprints</a><a routerLink="/auth/register">Lab custodial residencies</a></div>
-  </div>
-  <div class="footer-bottom page-width"><span>© 2026 JHUB Africa Vault</span><span>Built for accountable innovation across Africa</span></div>
-</footer>
+  }
 }
 
-<router-outlet></router-outlet>
+<jhub-overlay-host />

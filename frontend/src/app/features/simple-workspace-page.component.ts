@@ -1,12 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RequestStore } from '../state/request.store';
+import { EmptyStateComponent } from '../shared/empty-state.component';
+import { PageHeaderComponent } from '../shared/page-header.component';
 
-@Component({ selector: 'jhub-simple-workspace-page', standalone: true, styleUrls: ['./innovator-theme.component.css'], imports: [RouterLink], changeDetection: ChangeDetectionStrategy.OnPush, template: `
-  <main class="simple-page page-width"><p class="eyebrow">INNOVATOR WORKSPACE / {{ title }}</p><h1>{{ heading }} <em>{{ accent }}</em></h1><p class="intro">{{ description }}</p><section class="simple-panel">@if (kind === 'team') {@if (request.draft().teamMembers.length) {@for (member of request.draft().teamMembers; track member.email) {<div class="row"><span><strong>{{ member.fullName }}</strong><small>{{ member.email }} · {{ member.roleInProject }}</small></span><b>{{ member.studentOrIdNo || 'ID pending' }}</b></div>}}@else {<strong>No team members saved yet.</strong><span>Add people while creating a request to see them here.</span>}<a class="primary-button" routerLink="/app/requests/new">Build a request <span>→</span></a>} @else {<strong>Settings are ready for your account preferences.</strong><span>Profile and bio-data are managed from your profile page.</span><a class="arrow-link" routerLink="/app/profile">Open profile ↗</a>}</section></main>
-`, styles: [`:host{display:block}.simple-page{padding:65px 0 110px}.eyebrow{color:#3ea945;font-size:10px;font-weight:800;letter-spacing:2px;margin:0 0 18px}.simple-page h1{font:400 clamp(42px,5vw,60px)/1.05 Georgia,serif;color:#262571;margin:0}.simple-page h1 em{color:#3ea945}.intro{color:#667083;font-size:13px;line-height:1.6;max-width:550px}.simple-panel{margin-top:35px;background:#fff;border:1px solid #e6e8ee;padding:28px;max-width:760px;display:flex;flex-direction:column;gap:16px;color:#667083;font-size:12px}.simple-panel strong{font:24px Georgia,serif;color:#262571}.row{display:flex;gap:15px;padding:15px 0;border-bottom:1px solid #edf0f4}.row span{flex:1}.row strong,.row small{display:block}.row strong{font:16px Georgia,serif;color:#262571}.row small{font-size:10px;color:#7c8492;margin-top:5px}.row b{font-size:10px;color:#3ea945}.primary-button{display:inline-flex;align-items:center;justify-content:space-between;gap:20px;background:#262571;color:#fff;text-decoration:none;padding:14px 18px;font-weight:700;font-size:12px;margin-top:10px;width:max-content}.arrow-link{color:#262571;text-decoration:none;font-weight:700;font-size:12px}@media(max-width:760px){.simple-page{padding-top:45px}.row{align-items:start}.row b{max-width:85px;text-align:right}}`]
+/** Lightweight pages for "My team" and "Settings". */
+@Component({
+  selector: 'jhub-simple-workspace-page',
+  standalone: true,
+  imports: [RouterLink, EmptyStateComponent, PageHeaderComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './simple-workspace-page.component.html'
 })
 export class SimpleWorkspacePageComponent {
-  protected readonly request = inject(RequestStore); protected readonly kind: 'team' | 'settings'; protected readonly title: string; protected readonly heading: string; protected readonly accent: string; protected readonly description: string;
-  constructor() { this.kind = location.pathname.endsWith('/team') ? 'team' : 'settings'; this.title = this.kind === 'team' ? 'MY TEAM' : 'SETTINGS'; this.heading = this.kind === 'team' ? 'Your project' : 'Account'; this.accent = this.kind === 'team' ? 'people.' : 'settings.'; this.description = this.kind === 'team' ? 'Review team members already added to your active request draft.' : 'Manage the information that keeps your JHUB account current.'; }
+  protected readonly request = inject(RequestStore);
+  protected readonly kind: 'team' | 'settings' = location.pathname.endsWith('/team') ? 'team' : 'settings';
 }
